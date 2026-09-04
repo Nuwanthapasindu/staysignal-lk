@@ -4,6 +4,8 @@ import { HomePage, ProblemPage, HowItWorksPage, TownPage } from '../features/geo
 import { NoticesPage, NoticeDetailPage } from '../features/notices';
 import { OwnerDeskPage, PostNoticePage, EditNoticePage } from '../features/owner';
 import { ImpactPage, NotFoundPage } from '../features/impact';
+import { TourismDirectoryPage, AddTourismPlacePage, TourismDetailPage } from '../features/tourism';
+import { CampingDirectoryPage, AddCampingPage, CampingDetailPage } from '../features/camping';
 import {
   LoginPage,
   SignupTravellerPage,
@@ -34,6 +36,23 @@ export const router = createBrowserRouter([
       { path: 'notices/:id', element: <NoticeDetailPage /> },
       { path: 'impact', element: <ImpactPage /> },
 
+      // Tourism Routes
+      { path: 'tourism', element: <TourismDirectoryPage /> },
+      { path: 'tourism/new', element: <AddTourismPlacePage /> },
+      { path: 'tourism/:id', element: <TourismDetailPage /> },
+      { path: 'admin/tourism', element: <TourismDirectoryPage /> },
+      { path: 'admin/tourism/new', element: <AddTourismPlacePage /> },
+
+      // Camping Routes
+      { path: 'camping', element: <CampingDirectoryPage /> },
+      { path: 'camping/new', element: <AddCampingPage /> },
+      { path: 'camping/:id', element: <CampingDetailPage /> },
+      { path: 'admin/camping', element: <CampingDirectoryPage /> },
+      { path: 'admin/camping/new', element: <AddCampingPage /> },
+
+      { path: '*', element: <NotFoundPage /> }
+    ]
+  }
       // auth (guests only)
       { path: 'login', element: <GuestOnly><LoginPage /></GuestOnly> },
       { path: 'signup/traveller', element: <GuestOnly><SignupTravellerPage /></GuestOnly> },

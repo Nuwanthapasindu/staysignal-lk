@@ -4,6 +4,9 @@ import Property from './Property.js';
 import Notice from './Notice.js';
 import NoticeEvent from './NoticeEvent.js';
 import ImpactSnapshot from './ImpactSnapshot.js';
+import TourismDestination from './TourismDestination.js';
+import Campsite from './Campsite.js';
+import PermitBooking from './PermitBooking.js';
 import Place from './Place.js';
 import PlaceImage from './PlaceImage.js';
 import PlaceFacility from './PlaceFacility.js';
@@ -26,6 +29,9 @@ export {
   Notice,
   NoticeEvent,
   ImpactSnapshot,
+  TourismDestination,
+  Campsite,
+  PermitBooking,
   Place,
   PlaceImage,
   PlaceFacility,

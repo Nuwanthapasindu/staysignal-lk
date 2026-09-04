@@ -4,4 +4,6 @@ frontend/dist
 .env
 .env.local
 .DS_Store
-CLAUDE.md
+backend/data/
+data/
+*.log
