@@ -1,23 +1,28 @@
 import { TourismDestination } from '../models/index.js';
 
-// Calculate summary statistics
+// Calculate summary statistics — strictly reflects what is in the database.
 const calculateTourismStats = async () => {
-  const total = await TourismDestination.countDocuments();
-  const active = await TourismDestination.countDocuments({ status: 'open' });
-  const weatherAdvisory = await TourismDestination.countDocuments({ 
-    $or: [{ status: 'caution' }, { status: 'danger' }] 
-  });
-  const draft = await TourismDestination.countDocuments({ status: 'draft' });
+  const [total, active, caution, danger, draft, provinces] = await Promise.all([
+    TourismDestination.countDocuments(),
+    TourismDestination.countDocuments({ status: 'open' }),
+    TourismDestination.countDocuments({ status: 'caution' }),
+    TourismDestination.countDocuments({ status: 'danger' }),
+    TourismDestination.countDocuments({ status: 'draft' }),
+    TourismDestination.distinct('province'),
+  ]);
+
+  const provinceCount = provinces.filter(Boolean).length;
+  const weatherAdvisory = caution + danger;
 
   return {
-    totalDestinations: total || 32,
-    totalDestinationsSub: '9 Provinces Logged',
-    activeOpen: active || 28,
-    activeOpenSub: 'Live to Foreign Desks',
-    weatherAdvisory: weatherAdvisory || 2,
-    weatherAdvisorySub: 'Monsoon Suspended',
-    draftRevisions: draft || 2,
-    draftRevisionsSub: 'Pending DWC Audit'
+    totalDestinations: total,
+    totalDestinationsSub: `${provinceCount} Province${provinceCount === 1 ? '' : 's'} Logged`,
+    activeOpen: active,
+    activeOpenSub: 'Published / Open',
+    weatherAdvisory,
+    weatherAdvisorySub: `${caution} Caution · ${danger} Suspended`,
+    draftRevisions: draft,
+    draftRevisionsSub: 'Pending Review',
   };
 };
 
