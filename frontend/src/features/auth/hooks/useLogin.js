@@ -5,29 +5,36 @@ import { HOME_BY_ROLE } from '../context/authContext';
 import { readApiError } from '../types';
 
 export function useLogin() {
-  const { login } = useAuth();
+  const { login: doLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const submit = async (values) => {
-    setSubmitting(true);
-    setFormError(null);
+  // Accepts either login(email, password) or login({ email, password }).
+  const login = async (emailOrValues, maybePassword) => {
+    const values =
+      emailOrValues && typeof emailOrValues === 'object'
+        ? emailOrValues
+        : { email: emailOrValues, password: maybePassword };
+    setLoading(true);
+    setError(null);
     setFieldErrors({});
     try {
-      const user = await login(values);
+      const user = await doLogin(values);
       const dest = location.state?.from || HOME_BY_ROLE[user.role] || '/';
       navigate(dest, { replace: true });
+      return user;
     } catch (err) {
       const { message, fields } = readApiError(err);
       setFieldErrors(fields);
-      setFormError(message || 'Could not sign you in.');
+      setError(message || 'Could not sign you in.');
+      return null;
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  return { submit, submitting, formError, fieldErrors };
+  return { login, submit: login, loading, submitting: loading, error, formError: error, fieldErrors };
 }
