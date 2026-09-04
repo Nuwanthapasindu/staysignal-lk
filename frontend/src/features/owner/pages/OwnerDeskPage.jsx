@@ -18,9 +18,10 @@ export default function OwnerDeskPage() {
   const [busyId, setBusyId] = useState(null);
   const [flash, setFlash] = useState(null);
 
-  // Any owner may manage an unclaimed/legacy notice; a claimed one only by
-  // the owner who published it (mirrors the backend ownership check).
-  const canManage = (notice) => !notice.createdBy || String(notice.createdBy) === String(user?.id);
+  // Strict match only — mirrors the backend ownership check. A notice with
+  // no createdBy (legacy/seed data) has no identifiable owner, so it won't
+  // show up on any owner's desk.
+  const canManage = (notice) => Boolean(notice.createdBy) && String(notice.createdBy) === String(user?.id);
 
   const load = useCallback(async () => {
     setLoading(true);

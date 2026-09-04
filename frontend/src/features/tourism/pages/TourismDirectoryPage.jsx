@@ -42,10 +42,11 @@ export default function TourismDirectoryPage() {
   const isAdmin = useLocation().pathname.startsWith('/admin');
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
-  // Any owner may edit unclaimed/legacy records; a claimed record is
-  // editable only by the owner who created it (mirrors the backend check).
+  // Strict match only — a record is editable only by the owner who created
+  // it (mirrors the backend check). Records with no createdBy (legacy/seed
+  // data) have no identifiable owner, so nobody sees the actions for them.
   const canManage = (item) =>
-    isOwner && (!item?.createdBy || String(item.createdBy) === String(user?.id));
+    isOwner && Boolean(item?.createdBy) && String(item.createdBy) === String(user?.id);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');

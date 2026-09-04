@@ -132,9 +132,10 @@ export default function NoticeDetailPage() {
   const statusConfig = getStatusConfig(status);
   const issueIcon = getIssueIcon(issue);
   const timeAgo = formatTimeAgo(verifiedAt || updatedAt);
-  // Any owner may manage an unclaimed/legacy notice; a claimed one only by
-  // the owner who published it (mirrors the backend ownership check).
-  const canManage = isOwner && (!notice.createdBy || String(notice.createdBy) === String(user?.id));
+  // Strict match only — mirrors the backend ownership check. A notice with
+  // no createdBy (legacy/seed data) has no identifiable owner, so nobody
+  // sees the edit/delete actions for it.
+  const canManage = isOwner && Boolean(notice.createdBy) && String(notice.createdBy) === String(user?.id);
 
   return (
     <div className="detail-page-container">

@@ -100,7 +100,7 @@ router.get('/stats', getTourismStats);
  *     tags: [Tourism]
  *     summary: Update a destination (accepts Mongo _id or slug); add/remove images
  *     security: [{ bearerAuth: [] }]
- *     description: Owner role required, and only the owner who created this destination (unclaimed legacy records may be edited by any owner).
+ *     description: Owner role required, and only the owner who created this destination.
  *     parameters:
  *       - in: path
  *         name: id

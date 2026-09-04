@@ -1,14 +1,14 @@
 /**
  * Ownership check for owner-authored records (notices, tourism destinations).
  *
- * A record with no `createdBy` is legacy/seed data — nobody "owns" it yet,
- * so any owner may still act on it (keeps demo/seed content editable).
- * A record WITH a `createdBy` may only be modified by that same user.
+ * Strict match only: a record may be modified only by the user who created
+ * it. A record with no `createdBy` (pre-ownership legacy/seed data) has no
+ * identifiable owner, so nobody — not even another owner — may edit or
+ * delete it through this check.
  */
 export const isOwnedBy = (record, userId) => {
-  const owner = record?.createdBy;
-  if (!owner) return true; // unclaimed legacy record
-  return String(owner) === String(userId);
+  if (!userId || !record?.createdBy) return false;
+  return String(record.createdBy) === String(userId);
 };
 
 export const OWNERSHIP_DENIED = 'You can only edit or delete records you created.';
