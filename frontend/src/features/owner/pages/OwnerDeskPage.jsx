@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchNotices, deleteNotice, updateNotice, getStatusConfig, formatTimeAgo } from '../../notices';
+import { useAuth } from '../../auth';
 
 const QUICK_STATUSES = [
   { id: 'open', label: 'Open & Clear', color: '#16A34A' },
@@ -10,24 +11,30 @@ const QUICK_STATUSES = [
 ];
 
 export default function OwnerDeskPage() {
+  const { user } = useAuth();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [flash, setFlash] = useState(null);
 
+  // Any owner may manage an unclaimed/legacy notice; a claimed one only by
+  // the owner who published it (mirrors the backend ownership check).
+  const canManage = (notice) => !notice.createdBy || String(notice.createdBy) === String(user?.id);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetchNotices({ sort: 'newest' });
-      setNotices(res?.notices || []);
+      setNotices((res?.notices || []).filter(canManage));
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to load notices');
     } finally {
       setLoading(false);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     load();

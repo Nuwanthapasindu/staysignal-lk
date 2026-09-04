@@ -8,6 +8,7 @@ import {
   deleteNotice as deleteNoticeStore,
 } from '../services/noticeStore.js';
 import { validateNoticePayload } from '../validators/noticeValidator.js';
+import { isOwnedBy, OWNERSHIP_DENIED } from '../utils/ownership.js';
 
 export const listNotices = async (req, res) => {
   try {
@@ -62,6 +63,9 @@ export const updateNotice = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Notice not found' });
     }
+    if (!isOwnedBy(existing, req.user?.id)) {
+      return res.status(403).json({ error: OWNERSHIP_DENIED });
+    }
 
     const merged = { ...existing, ...req.body };
     const { isValid, errors } = validateNoticePayload(merged);
@@ -80,6 +84,14 @@ export const updateNotice = async (req, res) => {
 export const deleteNotice = async (req, res) => {
   try {
     const { id } = req.params;
+    const existing = await getNoticeById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Notice not found' });
+    }
+    if (!isOwnedBy(existing, req.user?.id)) {
+      return res.status(403).json({ error: OWNERSHIP_DENIED });
+    }
+
     const ok = await deleteNoticeStore(id);
     if (!ok) {
       return res.status(404).json({ error: 'Notice not found' });
@@ -93,7 +105,7 @@ export const deleteNotice = async (req, res) => {
 
 export const createNotice = async (req, res) => {
   try {
-    const noticeData = req.body;
+    const noticeData = { ...req.body, createdBy: req.user?.id };
     if (!noticeData.title || !noticeData.town || !noticeData.headline) {
       return res.status(400).json({ error: 'Stay title, town, and headline are required.' });
     }

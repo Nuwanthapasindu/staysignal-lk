@@ -110,7 +110,7 @@ router.post('/notices', ownerOnly, noticeValidationMiddleware, createNotice);
  *     tags: [Notices]
  *     summary: Update a notice
  *     security: [{ bearerAuth: [] }]
- *     description: Owner role required. Fields are merged into the existing record and re-validated as a whole.
+ *     description: Owner role required, and only the owner who published this notice (unclaimed legacy records may be edited by any owner). Fields are merged into the existing record and re-validated as a whole.
  *     parameters:
  *       - in: path
  *         name: id
@@ -135,7 +135,7 @@ router.post('/notices', ownerOnly, noticeValidationMiddleware, createNotice);
  *     tags: [Notices]
  *     summary: Delete a notice
  *     security: [{ bearerAuth: [] }]
- *     description: Owner role required.
+ *     description: Owner role required, and only the owner who published this notice.
  *     parameters:
  *       - in: path
  *         name: id

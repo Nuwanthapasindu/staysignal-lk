@@ -42,6 +42,10 @@ export default function TourismDirectoryPage() {
   const isAdmin = useLocation().pathname.startsWith('/admin');
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
+  // Any owner may edit unclaimed/legacy records; a claimed record is
+  // editable only by the owner who created it (mirrors the backend check).
+  const canManage = (item) =>
+    isOwner && (!item?.createdBy || String(item.createdBy) === String(user?.id));
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
@@ -448,22 +452,26 @@ export default function TourismDirectoryPage() {
                           <Eye size={14} />
                         </Link>
 
-                        <Link
-                          to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
-                          className="btn-icon"
-                          title="Edit Entry"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          <Edit size={14} />
-                        </Link>
+                        {canManage(item) && (
+                          <>
+                            <Link
+                              to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
+                              className="btn-icon"
+                              title="Edit Entry"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              <Edit size={14} />
+                            </Link>
 
-                        <button
-                          className="btn-icon"
-                          title="Delete Destination"
-                          onClick={() => handleDelete(rowId, item.name)}
-                        >
-                          <Trash2 size={14} color="var(--text-tertiary)" />
-                        </button>
+                            <button
+                              className="btn-icon"
+                              title="Delete Destination"
+                              onClick={() => handleDelete(rowId, item.name)}
+                            >
+                              <Trash2 size={14} color="var(--text-tertiary)" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -580,7 +588,7 @@ export default function TourismDirectoryPage() {
                   </div>
                 </Link>
 
-                {isOwner && (
+                {canManage(item) && (
                   <div
                     style={{
                       display: 'flex',

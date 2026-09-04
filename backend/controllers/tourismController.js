@@ -1,11 +1,12 @@
 import { TourismDestination } from '../models/index.js';
 import { filesToImageDocs } from '../middleware/upload.js';
 import { localStorageAdapter } from '../services/fileStorage.js';
+import { isOwnedBy, OWNERSHIP_DENIED } from '../utils/ownership.js';
 
 // Fields the multipart form sends as JSON strings — parse them back to objects.
 const JSON_FIELDS = ['regulations', 'contacts', 'specs', 'dossier', 'siteRules', 'corridorRadar', 'campAndStay', 'hotlines'];
 // Never accept these straight from the client on write.
-const RESERVED_FIELDS = new Set(['_id', 'id', '__v', 'slug', 'images', 'createdAt', 'updatedAt', 'created_at', 'updated_at']);
+const RESERVED_FIELDS = new Set(['_id', 'id', '__v', 'slug', 'images', 'createdAt', 'updatedAt', 'created_at', 'updated_at', 'createdBy']);
 
 const coerceBody = (body = {}) => {
   const out = { ...body };
@@ -141,6 +142,7 @@ export const createDestination = async (req, res) => {
     if (!data.province) data.province = 'Not specified';
     if (!data.district) data.district = 'Not specified';
     if (!data.category) data.category = 'Heritage & Archaeological';
+    data.createdBy = req.user?.id;
 
     const imageDocs = filesToImageDocs(req.files);
     if (imageDocs.length) {
@@ -168,6 +170,10 @@ export const updateDestination = async (req, res) => {
     if (!destination) {
       cleanupUploads(req);
       return res.status(404).json({ success: false, message: 'Destination not found' });
+    }
+    if (!isOwnedBy(destination, req.user?.id)) {
+      cleanupUploads(req);
+      return res.status(403).json({ success: false, message: OWNERSHIP_DENIED });
     }
 
     const body = coerceBody(req.body);
@@ -208,18 +214,19 @@ export const updateDestination = async (req, res) => {
 
 export const updateStatus = async (req, res) => {
   try {
+    const destination = await findByIdOrSlug(req.params.id);
+    if (!destination) return res.status(404).json({ success: false, message: 'Destination not found' });
+    if (!isOwnedBy(destination, req.user?.id)) {
+      return res.status(403).json({ success: false, message: OWNERSHIP_DENIED });
+    }
+
     const { status, statusText, statusSub } = req.body;
-    const updateFields = { status };
-    if (statusText) updateFields.statusText = statusText;
-    if (statusSub !== undefined) updateFields.statusSub = statusSub;
+    destination.status = status;
+    if (statusText) destination.statusText = statusText;
+    if (statusSub !== undefined) destination.statusSub = statusSub;
+    await destination.save();
 
-    const query = req.params.id.match(/^[0-9a-fA-F]{24}$/)
-      ? { _id: req.params.id }
-      : { slug: req.params.id.toLowerCase() };
-    const updated = await TourismDestination.findOneAndUpdate(query, updateFields, { new: true });
-    if (!updated) return res.status(404).json({ success: false, message: 'Destination not found' });
-
-    res.status(200).json({ success: true, data: updated });
+    res.status(200).json({ success: true, data: destination });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -227,15 +234,16 @@ export const updateStatus = async (req, res) => {
 
 export const deleteDestination = async (req, res) => {
   try {
-    const query = req.params.id.match(/^[0-9a-fA-F]{24}$/)
-      ? { _id: req.params.id }
-      : { slug: req.params.id.toLowerCase() };
-    const deleted = await TourismDestination.findOneAndDelete(query);
+    const destination = await findByIdOrSlug(req.params.id);
+    if (!destination) return res.status(404).json({ success: false, message: 'Destination not found' });
+    if (!isOwnedBy(destination, req.user?.id)) {
+      return res.status(403).json({ success: false, message: OWNERSHIP_DENIED });
+    }
 
-    if (!deleted) return res.status(404).json({ success: false, message: 'Destination not found' });
+    await destination.deleteOne();
 
     // Purge the destination's uploaded files from disk.
-    (deleted.images || []).forEach((img) => localStorageAdapter.remove(img.path));
+    (destination.images || []).forEach((img) => localStorageAdapter.remove(img.path));
 
     res.status(200).json({ success: true, message: 'Destination deleted successfully' });
   } catch (error) {
@@ -256,6 +264,10 @@ export const addDestinationImages = async (req, res) => {
       cleanupUploads(req);
       return res.status(404).json({ success: false, message: 'Destination not found' });
     }
+    if (!isOwnedBy(destination, req.user?.id)) {
+      cleanupUploads(req);
+      return res.status(403).json({ success: false, message: OWNERSHIP_DENIED });
+    }
 
     destination.images.push(...newImages);
     destination.heroImage = destination.images[0]?.url || '';
@@ -274,6 +286,9 @@ export const deleteDestinationImage = async (req, res) => {
     const { imageId } = req.params;
     const destination = await findByIdOrSlug(req.params.id);
     if (!destination) return res.status(404).json({ success: false, message: 'Destination not found' });
+    if (!isOwnedBy(destination, req.user?.id)) {
+      return res.status(403).json({ success: false, message: OWNERSHIP_DENIED });
+    }
 
     const target = destination.images.find((img) => String(img._id) === String(imageId));
     if (!target) return res.status(404).json({ success: false, message: 'Image not found on this destination' });

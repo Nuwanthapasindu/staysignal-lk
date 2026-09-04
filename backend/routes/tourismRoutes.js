@@ -11,8 +11,11 @@ import {
   getTourismStats,
 } from '../controllers/tourismController.js';
 import { uploadTourismImages } from '../middleware/upload.js';
+import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+
+const ownerOnly = [requireAuth, requireRole('owner')];
 
 /**
  * @swagger
@@ -48,6 +51,8 @@ const router = express.Router();
  *   post:
  *     tags: [Tourism]
  *     summary: Register a new tourism destination (with optional images)
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required. The destination is stamped with the creating owner.
  *     requestBody:
  *       required: true
  *       content:
@@ -64,10 +69,12 @@ const router = express.Router();
  *       400:
  *         description: Validation failed / bad image upload
  *         content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
  */
 router.route('/')
   .get(getDestinations)
-  .post(uploadTourismImages, createDestination);
+  .post(ownerOnly, uploadTourismImages, createDestination);
 
 /**
  * @swagger
@@ -92,6 +99,8 @@ router.get('/stats', getTourismStats);
  *   put:
  *     tags: [Tourism]
  *     summary: Update a destination (accepts Mongo _id or slug); add/remove images
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required, and only the owner who created this destination (unclaimed legacy records may be edited by any owner).
  *     parameters:
  *       - in: path
  *         name: id
@@ -111,10 +120,16 @@ router.get('/stats', getTourismStats);
  *             schema:
  *               type: object
  *               properties: { success: { type: boolean }, data: { $ref: '#/components/schemas/TourismDestination' } }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403:
+ *         description: Wrong role, or this destination belongs to a different owner
+ *         content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
  *       404: { $ref: '#/components/responses/NotFound' }
  *   delete:
  *     tags: [Tourism]
  *     summary: Delete a destination and purge its uploaded images from disk
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required, and only the owner who created this destination.
  *     parameters:
  *       - in: path
  *         name: id
@@ -122,11 +137,15 @@ router.get('/stats', getTourismStats);
  *         schema: { type: string }
  *     responses:
  *       200: { description: Deleted }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403:
+ *         description: Wrong role, or this destination belongs to a different owner
+ *         content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
 router.route('/:id')
-  .put(uploadTourismImages, updateDestination)
-  .delete(deleteDestination);
+  .put(ownerOnly, uploadTourismImages, updateDestination)
+  .delete(ownerOnly, deleteDestination);
 
 /**
  * @swagger
@@ -134,6 +153,8 @@ router.route('/:id')
  *   patch:
  *     tags: [Tourism]
  *     summary: Update just the operational status of a destination
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required, and only the owner who created this destination.
  *     parameters:
  *       - in: path
  *         name: id
@@ -160,7 +181,7 @@ router.route('/:id')
  *               properties: { success: { type: boolean }, data: { $ref: '#/components/schemas/TourismDestination' } }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
-router.patch('/:id/status', updateStatus);
+router.patch('/:id/status', ownerOnly, updateStatus);
 
 /**
  * @swagger
@@ -168,6 +189,8 @@ router.patch('/:id/status', updateStatus);
  *   post:
  *     tags: [Tourism]
  *     summary: Add one or more images to an existing destination
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required, and only the owner who created this destination.
  *     parameters:
  *       - in: path
  *         name: id
@@ -194,7 +217,7 @@ router.patch('/:id/status', updateStatus);
  *         content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
-router.post('/:id/images', uploadTourismImages, addDestinationImages);
+router.post('/:id/images', ownerOnly, uploadTourismImages, addDestinationImages);
 
 /**
  * @swagger
@@ -202,6 +225,8 @@ router.post('/:id/images', uploadTourismImages, addDestinationImages);
  *   delete:
  *     tags: [Tourism]
  *     summary: Remove a single image from a destination (and delete the file on disk)
+ *     security: [{ bearerAuth: [] }]
+ *     description: Owner role required, and only the owner who created this destination.
  *     parameters:
  *       - in: path
  *         name: id
@@ -221,7 +246,7 @@ router.post('/:id/images', uploadTourismImages, addDestinationImages);
  *               properties: { success: { type: boolean }, data: { $ref: '#/components/schemas/TourismDestination' } }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
-router.delete('/:id/images/:imageId', deleteDestinationImage);
+router.delete('/:id/images/:imageId', ownerOnly, deleteDestinationImage);
 
 /**
  * @swagger

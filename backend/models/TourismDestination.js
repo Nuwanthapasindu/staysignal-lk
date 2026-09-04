@@ -56,6 +56,9 @@ const hotlineSchema = new mongoose.Schema({
 }, { _id: false });
 
 const tourismDestinationSchema = new mongoose.Schema({
+  // Owner account that registered this destination. Absent on legacy/seed
+  // records. Used to scope edit/delete to the creator.
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
   nodeId: { type: String, required: true, trim: true }, // e.g. UNESCO-LK-0014

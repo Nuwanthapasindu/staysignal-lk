@@ -7,6 +7,12 @@ const noticeSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    // Owner account that published this notice. Absent on legacy/seed
+    // records. Used to scope edit/delete to the creator.
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     title: {
       type: String,
       required: true,

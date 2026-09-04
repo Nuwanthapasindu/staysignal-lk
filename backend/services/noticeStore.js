@@ -284,6 +284,7 @@ export const updateNotice = async (id, patch) => {
   delete cleanPatch._id;
   delete cleanPatch.id;
   delete cleanPatch.customId;
+  delete cleanPatch.createdBy;
 
   if (getIsMongoConnected()) {
     try {

@@ -132,6 +132,9 @@ export default function NoticeDetailPage() {
   const statusConfig = getStatusConfig(status);
   const issueIcon = getIssueIcon(issue);
   const timeAgo = formatTimeAgo(verifiedAt || updatedAt);
+  // Any owner may manage an unclaimed/legacy notice; a claimed one only by
+  // the owner who published it (mirrors the backend ownership check).
+  const canManage = isOwner && (!notice.createdBy || String(notice.createdBy) === String(user?.id));
 
   return (
     <div className="detail-page-container">
@@ -141,7 +144,7 @@ export default function NoticeDetailPage() {
           ← Back to Corridor Ledger
         </Link>
 
-        {isOwner && (
+        {canManage && (
           <div style={{ display: 'flex', gap: '8px' }}>
             <Link
               to={`/notices/${encodeURIComponent(id)}/edit`}
