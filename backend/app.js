@@ -4,7 +4,31 @@ import cors from 'cors';
 import morgan from 'morgan';
 import env from './config/env.js';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsDoc from 'swagger-jsdoc';
+
 const app = express();
+
+// Swagger options
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'StaySignal API',
+      version: '1.0.0',
+      description: 'API for StaySignal Hackathon',
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+      },
+    ],
+  },
+  apis: ['./routes/*.js'],
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Middleware
 app.use(helmet());
@@ -13,6 +37,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // Routes
-// app.use('/api', apiRoutes);
+import impactRoutes from './routes/impactRoutes.js';
+app.use('/api/impact', impactRoutes);
 
 export default app;
