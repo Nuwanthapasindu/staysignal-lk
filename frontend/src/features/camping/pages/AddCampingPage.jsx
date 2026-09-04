@@ -18,11 +18,12 @@ import {
   Crosshair,
   FileCheck
 } from 'lucide-react';
+import { createCampsite } from '../api/campingApi';
 
 export default function AddCampingPage() {
   const navigate = useNavigate();
 
-  // Form State initialized with values matching Image 4
+  // Form State initialized matching Image 4
   const [name, setName] = useState('Knuckles Cloud Forest Camp – Ridge Plot 02');
   const [classification, setClassification] = useState('Official DWC National Park Camp');
   const [smsSummary, setSmsSummary] = useState('Plot 02 open. Knuckles ridge cleared. Water spring running. Ranger check-in at Deanston');
@@ -62,9 +63,43 @@ export default function AddCampingPage() {
   const [hotline, setHotline] = useState('+94 66 222 4110');
   const [vhfChannel, setVhfChannel] = useState('Channel 88 (146.520 MHz)');
   const [medicalCenter, setMedicalCenter] = useState('Teldeniya Base (38km)');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    await createCampsite({
+      name,
+      classification,
+      smsSummary,
+      overview,
+      province,
+      district,
+      location: `${district}, ${province}`,
+      elevation,
+      gps,
+      rangerStation,
+      difficulty,
+      pitchesCount: parseInt(tentPads, 10) || 4,
+      pitchesLabel: `${tentPads} Pitches`,
+      maxCampers: parseInt(capacity, 10) || 16,
+      campersLabel: `Max ${capacity} Campers`,
+      tariffLkr,
+      tariffUsd,
+      rangerTariff,
+      season,
+      duration,
+      facilities,
+      rules,
+      contacts: {
+        hotline,
+        vhfChannel,
+        medicalCenter
+      }
+    });
+
+    setIsSubmitting(false);
     alert('Campsite successfully registered and synced with DWC Field Ledger!');
     navigate('/admin/camping');
   };
@@ -126,20 +161,34 @@ export default function AddCampingPage() {
               <span className="form-helper">Official nomenclature registered with the Department of Wildlife Conservation</span>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                Wilderness Classification Type <span className="required">*</span>
-              </label>
-              <select 
-                className="form-select"
-                value={classification}
-                onChange={(e) => setClassification(e.target.value)}
-              >
-                <option value="Official DWC National Park Camp">Official DWC National Park Camp</option>
-                <option value="Forest Department Eco-Reserve">Forest Department Eco-Reserve</option>
-                <option value="Community Managed Wilderness">Community Managed Wilderness</option>
-                <option value="Private Agro-Forest Buffer">Private Agro-Forest Buffer</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">
+                  Wilderness Classification Type <span className="required">*</span>
+                </label>
+                <select 
+                  className="form-select"
+                  value={classification}
+                  onChange={(e) => setClassification(e.target.value)}
+                >
+                  <option value="Official DWC National Park Camp">Official DWC National Park Camp</option>
+                  <option value="Forest Department Eco-Reserve">Forest Department Eco-Reserve</option>
+                  <option value="Community Managed Wilderness">Community Managed Wilderness</option>
+                  <option value="Private Agro-Forest Buffer">Private Agro-Forest Buffer</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Terrain Belt Classification</label>
+                <select 
+                  className="form-select"
+                  value={province === 'Central Province' ? 'Central Highlands' : 'Knuckles Foothills'}
+                  disabled
+                >
+                  <option value="Central Highlands">Central Highlands</option>
+                  <option value="Knuckles Foothills">Knuckles Foothills</option>
+                  <option value="Uva Passages">Uva Passages</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-group">
@@ -198,16 +247,12 @@ export default function AddCampingPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">District / Administrative Secretariat</label>
-                <select 
-                  className="form-select"
+                <input 
+                  type="text" 
+                  className="form-input" 
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
-                >
-                  <option value="Matale (Laggala Secretariat)">Matale (Laggala Secretariat)</option>
-                  <option value="Kandy (Panwila Secretariat)">Kandy (Panwila Secretariat)</option>
-                  <option value="Nuwara Eliya (Walapane)">Nuwara Eliya (Walapane)</option>
-                  <option value="Badulla (Hali-Ela)">Badulla (Hali-Ela)</option>
-                </select>
+                />
               </div>
             </div>
 
@@ -656,8 +701,13 @@ export default function AddCampingPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Publish Campsite to Live Registry
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ width: '100%', justifyContent: 'center' }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Registering...' : 'Publish Campsite to Live Registry'}
               </button>
               <button 
                 type="button" 

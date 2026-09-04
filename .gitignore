@@ -4,3 +4,6 @@ frontend/dist
 .env
 .env.local
 .DS_Store
+backend/data/
+data/
+*.log

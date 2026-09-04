@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Tent, 
@@ -12,18 +12,23 @@ import {
   Droplets, 
   Compass, 
   RotateCcw,
-  Edit,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  Radio,
-  FileCheck,
-  CloudRain,
-  PhoneCall,
-  Clock,
-  ArrowRight
+  Edit, 
+  Trash2, 
+  ChevronDown, 
+  ChevronRight, 
+  Radio, 
+  FileCheck, 
+  CloudRain, 
+  PhoneCall, 
+  Clock, 
+  ArrowRight 
 } from 'lucide-react';
-import { campingStats, campsitesList } from '../data/campingData';
+import { campingStats as defaultStats, campsitesList as defaultList } from '../data/campingData';
+import { 
+  fetchCampsites, 
+  updateCampsiteStatus, 
+  deleteCampsite 
+} from '../api/campingApi';
 
 export default function CampingDirectoryPage() {
   const navigate = useNavigate();
@@ -34,7 +39,27 @@ export default function CampingDirectoryPage() {
   const [filterRanger, setFilterRanger] = useState(false);
   const [filterGroup12, setFilterGroup12] = useState(false);
   const [directivesOpen, setDirectivesOpen] = useState(false);
-  const [campsites, setCampsites] = useState(campsitesList);
+  const [campsites, setCampsites] = useState(defaultList);
+  const [stats, setStats] = useState(defaultStats);
+
+  const loadData = async () => {
+    const result = await fetchCampsites({
+      search,
+      belt: selectedBelt,
+      status: selectedStatus,
+      water: filterWater,
+      ranger: filterRanger,
+      group12: filterGroup12
+    });
+    if (result && result.campsites) {
+      setCampsites(result.campsites);
+      if (result.stats) setStats(result.stats);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [search, selectedBelt, selectedStatus, filterWater, filterRanger, filterGroup12]);
 
   const filteredCampsites = campsites.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -60,21 +85,47 @@ export default function CampingDirectoryPage() {
     setFilterGroup12(false);
   };
 
-  const handleToggleStatus = (id, currentStatus) => {
-    setCampsites(prev => prev.map(item => {
-      if (item.id === id) {
-        if (currentStatus === 'open') {
-          return { ...item, status: 'danger', statusText: 'SEASON CLOSED' };
-        } else if (currentStatus === 'danger') {
-          return { ...item, status: 'open', statusText: 'OPEN • SPRING RUNNING' };
-        } else if (currentStatus === 'caution') {
-          return { ...item, status: 'danger', statusText: 'SUSPENDED' };
-        } else if (currentStatus === 'draft') {
-          return { ...item, status: 'open', statusText: 'OPEN • VERIFIED' };
-        }
+  const handleToggleStatus = async (id, currentStatus) => {
+    const item = campsites.find(c => (c._id || c.id) === id);
+    if (!item) return;
+
+    let newStatus = 'open';
+    let newStatusText = 'OPEN • SPRING RUNNING';
+
+    if (currentStatus === 'open') {
+      newStatus = 'danger';
+      newStatusText = 'SEASON CLOSED';
+    } else if (currentStatus === 'danger') {
+      newStatus = 'open';
+      newStatusText = 'OPEN • SPRING RUNNING';
+    } else if (currentStatus === 'caution') {
+      newStatus = 'danger';
+      newStatusText = 'SUSPENDED';
+    } else if (currentStatus === 'draft') {
+      newStatus = 'open';
+      newStatusText = 'OPEN • VERIFIED';
+    }
+
+    setCampsites(prev => prev.map(c => {
+      if ((c._id || c.id) === id) {
+        return { ...c, status: newStatus, statusText: newStatusText };
       }
-      return item;
+      return c;
     }));
+
+    if (item._id) {
+      await updateCampsiteStatus(item._id, { status: newStatus, statusText: newStatusText });
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (confirm(`Remove ${name} from monitoring list?`)) {
+      const item = campsites.find(c => (c._id || c.id) === id);
+      setCampsites(prev => prev.filter(c => (c._id || c.id) !== id));
+      if (item?._id) {
+        await deleteCampsite(item._id);
+      }
+    }
   };
 
   return (
@@ -114,8 +165,8 @@ export default function CampingDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">Registered Sites</div>
-            <div className="stat-value">{campingStats.registeredSites}</div>
-            <div className="stat-sub">{campingStats.registeredSitesSub}</div>
+            <div className="stat-value">{stats.registeredSites}</div>
+            <div className="stat-sub">{stats.registeredSitesSub}</div>
           </div>
           <div className="stat-icon">
             <Tent size={18} />
@@ -125,8 +176,8 @@ export default function CampingDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">Operational Status</div>
-            <div className="stat-value">{campingStats.operationalStatus}</div>
-            <div className="stat-sub">{campingStats.operationalStatusSub}</div>
+            <div className="stat-value">{stats.operationalStatus}</div>
+            <div className="stat-sub">{stats.operationalStatusSub}</div>
           </div>
           <div className="stat-icon">
             <ShieldCheck size={18} />
@@ -136,8 +187,8 @@ export default function CampingDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">Weather Suspensions</div>
-            <div className="stat-value" style={{ color: '#b91c1c' }}>{campingStats.weatherSuspensions}</div>
-            <div className="stat-sub">{campingStats.weatherSuspensionsSub}</div>
+            <div className="stat-value" style={{ color: '#b91c1c' }}>{stats.weatherSuspensions}</div>
+            <div className="stat-sub">{stats.weatherSuspensionsSub}</div>
           </div>
           <div className="stat-icon alert">
             <AlertTriangle size={18} />
@@ -147,8 +198,8 @@ export default function CampingDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">Permits Cleared</div>
-            <div className="stat-value">{campingStats.permitsCleared}</div>
-            <div className="stat-sub">{campingStats.permitsClearedSub}</div>
+            <div className="stat-value">{stats.permitsCleared}</div>
+            <div className="stat-sub">{stats.permitsClearedSub}</div>
           </div>
           <div className="stat-icon">
             <Ticket size={18} />
@@ -276,7 +327,7 @@ export default function CampingDirectoryPage() {
           </button>
 
           <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-            Showing {filteredCampsites.length} of 18 staging grounds
+            Showing {filteredCampsites.length} of {stats.registeredSites} staging grounds
           </span>
         </div>
       </div>
@@ -285,7 +336,7 @@ export default function CampingDirectoryPage() {
       <div className="data-table-card">
         <div className="table-header-bar">
           <div className="table-header-title">
-            <ShieldCheck size={16} color="#164734" />
+            <ShieldCheck size={16} color="#166534" />
             <span>Verified Campsite Dispatches & Pitch Status</span>
           </div>
           <div className="table-sync-note">
@@ -308,159 +359,158 @@ export default function CampingDirectoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredCampsites.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
-                      {item.name}
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {item.location}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                      <span className="badge-tag" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px' }}>
-                        ELEV: {item.elevation}
-                      </span>
-                      {item.featureBadge && (
-                        <span className={`badge-tag ${item.featureBadgeType === 'green' ? 'eco' : ''}`} style={{ fontSize: '10px' }}>
-                          {item.featureBadge}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.pitchesLabel}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{item.campersLabel}</div>
-                    <div style={{ fontSize: '10.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{item.footprint}</div>
-                  </td>
-
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.tariffLkr} {item.tariffUnit ? `/ ${item.tariffUnit}` : ''}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{item.tariffExtra}</div>
-                  </td>
-
-                  <td>
-                    <span className={`status-pill ${item.status}`}>
-                      <span className="dot"></span>
-                      {item.statusText}
-                    </span>
-                    {item.statusSub && (
-                      <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        {item.statusSub}
+              {filteredCampsites.map((item) => {
+                const rowId = item._id || item.id;
+                return (
+                  <tr key={rowId}>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
+                        {item.name}
                       </div>
-                    )}
-                  </td>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {item.location}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                        <span className="badge-tag" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px' }}>
+                          ELEV: {item.elevation}
+                        </span>
+                        {item.featureBadge && (
+                          <span className={`badge-tag ${item.featureBadgeType === 'green' ? 'eco' : ''}`} style={{ fontSize: '10px' }}>
+                            {item.featureBadge}
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12px' }}>
-                      {item.clearanceOffice}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {item.clearanceSub}
-                    </div>
-                  </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.pitchesLabel}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{item.campersLabel}</div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{item.footprint}</div>
+                    </td>
 
-                  <td>
-                    <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.lastSynced}
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
-                      {item.lastSyncedChannel}
-                    </div>
-                  </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {item.tariffLkr} {item.tariffUnit ? `/ ${item.tariffUnit}` : ''}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{item.tariffExtra}</div>
+                    </td>
 
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      {item.status === 'draft' ? (
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
-                          onClick={() => handleToggleStatus(item.id, item.status)}
-                        >
-                          Review Draft
-                        </button>
-                      ) : (
+                    <td>
+                      <span className={`status-pill ${item.status}`}>
+                        <span className="dot"></span>
+                        {item.statusText}
+                      </span>
+                      {item.statusSub && (
+                        <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          {item.statusSub}
+                        </div>
+                      )}
+                    </td>
+
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12px' }}>
+                        {item.clearanceOffice}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {item.clearanceSub}
+                      </div>
+                    </td>
+
+                    <td>
+                      <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {item.lastSynced}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                        {item.lastSyncedChannel}
+                      </div>
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {item.status === 'draft' ? (
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                            onClick={() => handleToggleStatus(rowId, item.status)}
+                          >
+                            Review Draft
+                          </button>
+                        ) : (
+                          <Link 
+                            to={`/camping/${item.slug}`} 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                          >
+                            {item.slug === 'corbets-gap' ? 'View Log' : 'View Public'}
+                          </Link>
+                        )}
+
                         <Link 
-                          to={`/camping/${item.slug}`} 
+                          to={`/admin/camping/new`} 
                           className="btn btn-secondary btn-sm" 
                           style={{ padding: '3px 8px', fontSize: '11px' }}
                         >
-                          {item.id === 'corbets-gap' ? 'View Log' : 'View Public'}
+                          Edit
                         </Link>
-                      )}
 
-                      <Link 
-                        to={`/admin/camping/new`} 
-                        className="btn btn-secondary btn-sm" 
-                        style={{ padding: '3px 8px', fontSize: '11px' }}
-                      >
-                        Edit
-                      </Link>
+                        {(item.slug === 'knuckles-01' || item.id === 'knuckles-03') && (
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px', color: '#bf5338' }}
+                            onClick={() => handleToggleStatus(rowId, item.status)}
+                          >
+                            Close Season
+                          </button>
+                        )}
+                        {item.slug === 'horton-plains-01' && (
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px', color: '#bf5338' }}
+                            onClick={() => handleToggleStatus(rowId, item.status)}
+                          >
+                            Suspend
+                          </button>
+                        )}
+                        {item.slug === 'corbets-gap' && (
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
+                            onClick={() => handleToggleStatus(rowId, item.status)}
+                          >
+                            Reopen
+                          </button>
+                        )}
+                        {item.slug === 'gala-muduna' && (
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                            onClick={() => alert('Editing DWC Guidelines for Gala Muduna...')}
+                          >
+                            Edit Rules
+                          </button>
+                        )}
+                        {item.slug === 'ella-peak' && (
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                            onClick={() => handleToggleStatus(rowId, item.status)}
+                          >
+                            Publish
+                          </button>
+                        )}
 
-                      {item.id === 'knuckles-03' && (
                         <button 
-                          className="btn btn-secondary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px', color: '#bf5338' }}
-                          onClick={() => handleToggleStatus(item.id, item.status)}
+                          className="btn-icon" 
+                          title="Delete Staging"
+                          onClick={() => handleDelete(rowId, item.name)}
                         >
-                          Close Season
+                          <Trash2 size={13} color="var(--text-tertiary)" />
                         </button>
-                      )}
-                      {item.id === 'horton-01' && (
-                        <button 
-                          className="btn btn-secondary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px', color: '#bf5338' }}
-                          onClick={() => handleToggleStatus(item.id, item.status)}
-                        >
-                          Suspend
-                        </button>
-                      )}
-                      {item.id === 'corbets-gap' && (
-                        <button 
-                          className="btn btn-secondary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
-                          onClick={() => handleToggleStatus(item.id, item.status)}
-                        >
-                          Reopen
-                        </button>
-                      )}
-                      {item.id === 'gala-muduna' && (
-                        <button 
-                          className="btn btn-secondary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
-                          onClick={() => alert('Editing DWC Guidelines for Gala Muduna...')}
-                        >
-                          Edit Rules
-                        </button>
-                      )}
-                      {item.id === 'ella-peak' && (
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
-                          onClick={() => handleToggleStatus(item.id, item.status)}
-                        >
-                          Publish
-                        </button>
-                      )}
-
-                      <button 
-                        className="btn-icon" 
-                        title="Delete Staging"
-                        onClick={() => {
-                          if (confirm(`Remove ${item.name} from monitoring list?`)) {
-                            setCampsites(prev => prev.filter(c => c.id !== item.id));
-                          }
-                        }}
-                      >
-                        <Trash2 size={13} color="var(--text-tertiary)" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

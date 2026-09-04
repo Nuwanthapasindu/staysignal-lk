@@ -22,11 +22,30 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { knucklesCampDetail } from '../data/campingData';
+import { submitPermitBooking } from '../api/campingApi';
 
 export default function CampingDetailPage() {
   const { id } = useParams();
   const camp = knucklesCampDetail;
   const [showPermitModal, setShowPermitModal] = useState(false);
+  const [applicantName, setApplicantName] = useState('Julian Meyer (Alpine Expedition)');
+  const [phone, setPhone] = useState('+49 171 9845210');
+  const [numCampers, setNumCampers] = useState(2);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePermitSubmit = async () => {
+    setIsSubmitting(true);
+    const booking = await submitPermitBooking(camp.slug || 'knuckles-01', {
+      applicantName,
+      phone,
+      numCampers,
+      numPitches: 1,
+      totalFee: 'USD $25'
+    });
+    setIsSubmitting(false);
+    alert(`Permit Request Submitted to Deanston Range Office! Booking ID: ${booking.bookingId || 'DWC-KNK-8921'}`);
+    setShowPermitModal(false);
+  };
 
   return (
     <div className="page-container" style={{ paddingTop: '16px' }}>
@@ -359,6 +378,39 @@ export default function CampingDetailPage() {
             <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
               You are applying for a nocturnal staging permit at <strong>Knuckles Cloud Forest Camp (Pitch 02)</strong>. Permits are issued subject to Deanston Ranger validation.
             </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label className="form-label" style={{ fontSize: '11.5px' }}>Applicant / Leader Name</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={applicantName}
+                  onChange={(e) => setApplicantName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: '11.5px' }}>Emergency Contact Phone</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="form-label" style={{ fontSize: '11.5px' }}>Number of Campers (Max 16)</label>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  min={1} 
+                  max={16}
+                  value={numCampers}
+                  onChange={(e) => setNumCampers(parseInt(e.target.value, 10) || 1)}
+                />
+              </div>
+            </div>
+
             <div style={{ backgroundColor: 'var(--bg-surface-subtle)', padding: '12px', borderRadius: 'var(--radius-md)', marginBottom: '16px', fontSize: '12px' }}>
               <div><strong>Dates:</strong> 1 or 2 consecutive nights max</div>
               <div><strong>Mandatory Fee:</strong> USD $25 / night + Guide LKR 3,500</div>
@@ -366,8 +418,12 @@ export default function CampingDetailPage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => setShowPermitModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => { alert('Permit Request Submitted to Deanston Range Office! Booking ID: DWC-KNK-8921'); setShowPermitModal(false); }}>
-                Submit Permit Request
+              <button 
+                className="btn btn-primary" 
+                onClick={handlePermitSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Permit Request'}
               </button>
             </div>
           </div>

@@ -2,16 +2,18 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { PORT, MONGO_URI, CLIENT_ORIGIN } = process.env;
+const { 
+  PORT = 5000, 
+  MONGO_URI = 'mongodb://127.0.0.1:27017/staysignal', 
+  CLIENT_ORIGIN = 'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174' 
+} = process.env;
 
-if (!PORT) throw new Error('Missing required environment variable: PORT');
-if (!MONGO_URI) throw new Error('Missing required environment variable: MONGO_URI');
-if (!CLIENT_ORIGIN) throw new Error('Missing required environment variable: CLIENT_ORIGIN');
+const allowedOrigins = CLIENT_ORIGIN.split(',').map(o => o.trim());
 
 const env = Object.freeze({
   PORT: parseInt(PORT, 10),
   MONGO_URI,
-  CLIENT_ORIGIN,
+  CLIENT_ORIGIN: allowedOrigins,
 });
 
 export default env;

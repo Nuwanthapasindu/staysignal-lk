@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Landmark, 
@@ -28,7 +28,12 @@ import {
   Send,
   BookOpen
 } from 'lucide-react';
-import { tourismStats, tourismList } from '../data/tourismData';
+import { tourismStats as defaultStats, tourismList as defaultList } from '../data/tourismData';
+import { 
+  fetchTourismDestinations, 
+  updateTourismDestinationStatus, 
+  deleteTourismDestination 
+} from '../api/tourismApi';
 
 export default function TourismDirectoryPage() {
   const navigate = useNavigate();
@@ -36,9 +41,28 @@ export default function TourismDirectoryPage() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
-  const [destinations, setDestinations] = useState(tourismList);
+  const [destinations, setDestinations] = useState(defaultList);
+  const [stats, setStats] = useState(defaultStats);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Load from backend API
+  const loadData = async () => {
+    const result = await fetchTourismDestinations({
+      search,
+      category: selectedCategory,
+      province: selectedProvince,
+      status: selectedStatus
+    });
+    if (result && result.destinations) {
+      setDestinations(result.destinations);
+      if (result.stats) setStats(result.stats);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [search, selectedCategory, selectedProvince, selectedStatus]);
 
   const getCategoryIcon = (category) => {
     switch (category) {
@@ -61,10 +85,10 @@ export default function TourismDirectoryPage() {
 
   const filteredDestinations = destinations.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                          item.nodeId.toLowerCase().includes(search.toLowerCase()) ||
-                          item.district.toLowerCase().includes(search.toLowerCase());
+                          (item.nodeId && item.nodeId.toLowerCase().includes(search.toLowerCase())) ||
+                          (item.district && item.district.toLowerCase().includes(search.toLowerCase()));
     const matchesCat = selectedCategory === 'All Categories' || item.category === selectedCategory;
-    const matchesProv = selectedProvince === 'All Provinces' || item.province.includes(selectedProvince);
+    const matchesProv = selectedProvince === 'All Provinces' || (item.province && item.province.includes(selectedProvince));
     const matchesStat = selectedStatus === 'All Statuses' || 
                         (selectedStatus === 'Published / Open' && item.status === 'open') ||
                         (selectedStatus === 'Caution / Warning' && item.status === 'caution') ||
@@ -75,7 +99,7 @@ export default function TourismDirectoryPage() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(filteredDestinations.map(d => d.id));
+      setSelectedIds(filteredDestinations.map(d => d._id || d.id));
     } else {
       setSelectedIds([]);
     }
@@ -89,60 +113,76 @@ export default function TourismDirectoryPage() {
     }
   };
 
-  const handleToggleHide = (id) => {
-    setDestinations(prev => prev.map(item => {
-      if (item.id === id) {
-        const isHidden = item.status === 'danger';
-        return {
-          ...item,
-          status: isHidden ? 'open' : 'danger',
-          statusText: isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS'
-        };
-      }
-      return item;
-    }));
-  };
+  const handleToggleHide = async (id) => {
+    const item = destinations.find(d => (d._id || d.id) === id);
+    if (!item) return;
+    const isHidden = item.status === 'danger';
+    const newStatus = isHidden ? 'open' : 'danger';
+    const newStatusText = isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS';
 
-  const handleReinstate = (id) => {
-    setDestinations(prev => prev.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          status: 'open',
-          statusText: 'PUBLISHED / OPEN',
-          statusSub: 'Reinstated by Harbour Master'
-        };
+    setDestinations(prev => prev.map(d => {
+      if ((d._id || d.id) === id) {
+        return { ...d, status: newStatus, statusText: newStatusText };
       }
-      return item;
+      return d;
     }));
-  };
 
-  const handlePublishDraft = (id) => {
-    setDestinations(prev => prev.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          status: 'open',
-          statusText: 'PUBLISHED / OPEN',
-          statusSub: 'Approved by Field Ranger'
-        };
-      }
-      return item;
-    }));
-  };
-
-  const handleDelete = (id, name) => {
-    if (confirm(`Are you sure you want to remove ${name} from registry?`)) {
-      setDestinations(prev => prev.filter(d => d.id !== id));
+    if (item._id) {
+      await updateTourismDestinationStatus(item._id, { status: newStatus, statusText: newStatusText });
     }
   };
 
-  const handleSyncFeeds = () => {
+  const handleReinstate = async (id) => {
+    const item = destinations.find(d => (d._id || d.id) === id);
+    if (!item) return;
+    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Reinstated by Harbour Master' };
+
+    setDestinations(prev => prev.map(d => {
+      if ((d._id || d.id) === id) {
+        return { ...d, ...updateData };
+      }
+      return d;
+    }));
+
+    if (item._id) {
+      await updateTourismDestinationStatus(item._id, updateData);
+    }
+  };
+
+  const handlePublishDraft = async (id) => {
+    const item = destinations.find(d => (d._id || d.id) === id);
+    if (!item) return;
+    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Approved by Field Ranger' };
+
+    setDestinations(prev => prev.map(d => {
+      if ((d._id || d.id) === id) {
+        return { ...d, ...updateData };
+      }
+      return d;
+    }));
+
+    if (item._id) {
+      await updateTourismDestinationStatus(item._id, updateData);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (confirm(`Are you sure you want to remove ${name} from registry?`)) {
+      const item = destinations.find(d => (d._id || d.id) === id);
+      setDestinations(prev => prev.filter(d => (d._id || d.id) !== id));
+      if (item?._id) {
+        await deleteTourismDestination(item._id);
+      }
+    }
+  };
+
+  const handleSyncFeeds = async () => {
     setIsSyncing(true);
+    await loadData();
     setTimeout(() => {
       setIsSyncing(false);
       alert('SLTDA Feeds Synced with Central Highlands Gateway (Pundaluoya Node)!');
-    }, 800);
+    }, 600);
   };
 
   const resetFilters = () => {
@@ -189,8 +229,8 @@ export default function TourismDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">TOTAL DESTINATIONS</div>
-            <div className="stat-value">{tourismStats.totalDestinations}</div>
-            <div className="stat-sub">{tourismStats.totalDestinationsSub}</div>
+            <div className="stat-value">{stats.totalDestinations}</div>
+            <div className="stat-sub">{stats.totalDestinationsSub}</div>
           </div>
           <div className="stat-icon">
             <BookOpen size={18} />
@@ -200,8 +240,8 @@ export default function TourismDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">ACTIVE / OPEN</div>
-            <div className="stat-value">{tourismStats.activeOpen}</div>
-            <div className="stat-sub">{tourismStats.activeOpenSub}</div>
+            <div className="stat-value">{stats.activeOpen}</div>
+            <div className="stat-sub">{stats.activeOpenSub}</div>
           </div>
           <div className="stat-icon">
             <ShieldCheck size={18} />
@@ -211,8 +251,8 @@ export default function TourismDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">WEATHER ADVISORY</div>
-            <div className="stat-value" style={{ color: '#b91c1c' }}>{tourismStats.weatherAdvisory}</div>
-            <div className="stat-sub">{tourismStats.weatherAdvisorySub}</div>
+            <div className="stat-value" style={{ color: '#b91c1c' }}>{stats.weatherAdvisory}</div>
+            <div className="stat-sub">{stats.weatherAdvisorySub}</div>
           </div>
           <div className="stat-icon alert">
             <AlertTriangle size={18} />
@@ -222,8 +262,8 @@ export default function TourismDirectoryPage() {
         <div className="stat-card">
           <div>
             <div className="stat-title">DRAFT REVISIONS</div>
-            <div className="stat-value">{tourismStats.draftRevisions}</div>
-            <div className="stat-sub">{tourismStats.draftRevisionsSub}</div>
+            <div className="stat-value">{stats.draftRevisions}</div>
+            <div className="stat-sub">{stats.draftRevisionsSub}</div>
           </div>
           <div className="stat-icon">
             <FileEdit size={18} />
@@ -334,148 +374,151 @@ export default function TourismDirectoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredDestinations.map((item) => (
-                <tr key={item.id} style={{ backgroundColor: selectedIds.includes(item.id) ? 'var(--bg-surface-subtle)' : 'transparent' }}>
-                  <td>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={() => handleSelectRow(item.id)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  </td>
+              {filteredDestinations.map((item) => {
+                const rowId = item._id || item.id;
+                return (
+                  <tr key={rowId} style={{ backgroundColor: selectedIds.includes(rowId) ? 'var(--bg-surface-subtle)' : 'transparent' }}>
+                    <td>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(rowId)}
+                        onChange={() => handleSelectRow(rowId)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </td>
 
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
-                        {item.name}
-                      </span>
-                      {item.ecoRestricted && (
-                        <span className="badge-tag eco" style={{ fontSize: '9.5px', fontWeight: 700 }}>
-                          ECO-RESTRICTED
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
+                          {item.name}
                         </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                      {item.nodeId}
-                    </div>
-                  </td>
-
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                      {getCategoryIcon(item.category)}
-                      <span>{item.category}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12.5px' }}>
-                      {item.province}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {item.district}
-                    </div>
-                  </td>
-
-                  <td>
-                    <span className={`status-pill ${item.status}`}>
-                      <span className="dot"></span>
-                      {item.statusText}
-                    </span>
-                    {item.statusSub && (
-                      <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '3px' }}>
-                        {item.statusSub}
+                        {item.ecoRestricted && (
+                          <span className="badge-tag eco" style={{ fontSize: '9.5px', fontWeight: 700 }}>
+                            ECO-RESTRICTED
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </td>
+                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                        {item.nodeId}
+                      </div>
+                    </td>
 
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12px' }}>
-                      {item.foreignTariff}
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: 'var(--text-tertiary)' }}>
-                      {item.localTariff}
-                    </div>
-                  </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-primary)', fontWeight: 500 }}>
+                        {getCategoryIcon(item.category)}
+                        <span>{item.category}</span>
+                      </div>
+                    </td>
 
-                  <td>
-                    <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.verifiedAgo}
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
-                      {item.verifiedDesk}
-                    </div>
-                  </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12.5px' }}>
+                        {item.province}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {item.district}
+                      </div>
+                    </td>
 
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      {item.status === 'draft' ? (
-                        <button 
-                          className="btn btn-primary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px' }}
-                          onClick={() => handlePublishDraft(item.id)}
-                        >
-                          Review Draft
-                        </button>
-                      ) : item.status === 'danger' && item.id === 'pigeon-island-06' ? (
-                        <button 
-                          className="btn btn-secondary btn-sm" 
-                          style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
-                          onClick={() => handleReinstate(item.id)}
-                        >
-                          Reinstate
-                        </button>
-                      ) : (
+                    <td>
+                      <span className={`status-pill ${item.status}`}>
+                        <span className="dot"></span>
+                        {item.statusText}
+                      </span>
+                      {item.statusSub && (
+                        <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                          {item.statusSub}
+                        </div>
+                      )}
+                    </td>
+
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '12px' }}>
+                        {item.foreignTariff}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text-tertiary)' }}>
+                        {item.localTariff}
+                      </div>
+                    </td>
+
+                    <td>
+                      <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {item.verifiedAgo}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                        {item.verifiedDesk}
+                      </div>
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {item.status === 'draft' ? (
+                          <button 
+                            className="btn btn-primary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px' }}
+                            onClick={() => handlePublishDraft(rowId)}
+                          >
+                            Review Draft
+                          </button>
+                        ) : item.status === 'danger' && (item.id === 'pigeon-island-06' || item.slug === 'pigeon-island') ? (
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
+                            onClick={() => handleReinstate(rowId)}
+                          >
+                            Reinstate
+                          </button>
+                        ) : (
+                          <Link 
+                            to={`/tourism/${item.slug}`} 
+                            className="btn-icon" 
+                            title="View Public Dossier"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <Eye size={14} />
+                          </Link>
+                        )}
+
+                        {item.status === 'danger' && (
+                          <button 
+                            className="btn-icon" 
+                            title="Audit History"
+                            onClick={() => alert('Viewing marine storm closure logs.')}
+                          >
+                            <History size={14} color="var(--text-secondary)" />
+                          </button>
+                        )}
+
                         <Link 
-                          to={`/tourism/${item.slug}`} 
+                          to="/admin/tourism/new" 
                           className="btn-icon" 
-                          title="View Public Dossier"
+                          title="Edit Entry"
                           style={{ color: 'var(--text-secondary)' }}
                         >
-                          <Eye size={14} />
+                          <Edit size={14} />
                         </Link>
-                      )}
 
-                      {item.status === 'danger' && item.id === 'pigeon-island-06' && (
+                        {item.status !== 'draft' && item.status !== 'danger' && (
+                          <button 
+                            className="btn-icon" 
+                            title="Toggle Visibility"
+                            onClick={() => handleToggleHide(rowId)}
+                          >
+                            <EyeOff size={14} color="var(--text-secondary)" />
+                          </button>
+                        )}
+
                         <button 
                           className="btn-icon" 
-                          title="Audit History"
-                          onClick={() => alert('Viewing marine storm closure logs for Pigeon Island.')}
+                          title="Delete Destination"
+                          onClick={() => handleDelete(rowId, item.name)}
                         >
-                          <History size={14} color="var(--text-secondary)" />
+                          <Trash2 size={14} color="var(--text-tertiary)" />
                         </button>
-                      )}
-
-                      <Link 
-                        to="/admin/tourism/new" 
-                        className="btn-icon" 
-                        title="Edit Entry"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        <Edit size={14} />
-                      </Link>
-
-                      {item.status !== 'draft' && item.status !== 'danger' && (
-                        <button 
-                          className="btn-icon" 
-                          title="Toggle Visibility"
-                          onClick={() => handleToggleHide(item.id)}
-                        >
-                          <EyeOff size={14} color="var(--text-secondary)" />
-                        </button>
-                      )}
-
-                      <button 
-                        className="btn-icon" 
-                        title="Delete Destination"
-                        onClick={() => handleDelete(item.id, item.name)}
-                      >
-                        <Trash2 size={14} color="var(--text-tertiary)" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -511,7 +554,7 @@ export default function TourismDirectoryPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-              Showing 1-6 of 32 places
+              Showing {filteredDestinations.length} of {stats.totalDestinations} places
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <button className="btn btn-secondary btn-sm" style={{ padding: '3px 6px' }} disabled>

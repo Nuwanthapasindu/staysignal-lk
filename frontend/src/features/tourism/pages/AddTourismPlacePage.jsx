@@ -22,6 +22,7 @@ import {
   PhoneCall,
   CameraOff
 } from 'lucide-react';
+import { createTourismDestination } from '../api/tourismApi';
 
 export default function AddTourismPlacePage() {
   const navigate = useNavigate();
@@ -58,9 +59,38 @@ export default function AddTourismPlacePage() {
   const [touristPolice, setTouristPolice] = useState('+94 66 228 6520');
   const [hospital, setHospital] = useState('Dambulla Base Hospital (14km)');
   const [ambulance, setAmbulance] = useState('1990 Suwa Seriya (Free Dispatch)');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    await createTourismDestination({
+      name,
+      nodeId,
+      category,
+      province,
+      district,
+      elevation,
+      gps,
+      corridor,
+      difficulty,
+      foreignTariff,
+      localTariff,
+      saarcTariff,
+      operatingHours,
+      guideRequirement,
+      smsSummary,
+      overview,
+      regulations,
+      contacts: {
+        touristPolice,
+        hospital,
+        ambulance
+      }
+    });
+
+    setIsSubmitting(false);
     alert('Tourism Destination successfully registered and replicated to regional hotel kiosks!');
     navigate('/admin/tourism');
   };
@@ -601,8 +631,13 @@ export default function AddTourismPlacePage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Publish Destination to Live Registry
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ width: '100%', justifyContent: 'center' }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Publishing...' : 'Publish Destination to Live Registry'}
               </button>
               <button 
                 type="button" 
