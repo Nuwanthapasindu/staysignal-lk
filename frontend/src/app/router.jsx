@@ -1,27 +1,51 @@
-// M2 notices + shared chrome
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../shared/components/Layout';
 import { HomePage, ProblemPage, HowItWorksPage, TownPage } from '../features/geography';
 import { NoticesPage, NoticeDetailPage } from '../features/notices';
 import { OwnerDeskPage, PostNoticePage, EditNoticePage } from '../features/owner';
 import { ImpactPage, NotFoundPage } from '../features/impact';
+import {
+  LoginPage,
+  SignupTravellerPage,
+  SignupOwnerPage,
+  UnauthorizedPage,
+  RequireAuth,
+  RequireRole,
+  GuestOnly,
+} from '../features/auth';
+
+const ownerOnly = (element) => (
+  <RequireAuth>
+    <RequireRole role="owner">{element}</RequireRole>
+  </RequireAuth>
+);
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout />,
     children: [
+      // public
       { index: true, element: <HomePage /> },
       { path: 'problem', element: <ProblemPage /> },
       { path: 'how-it-works', element: <HowItWorksPage /> },
       { path: 'towns/:slug', element: <TownPage /> },
       { path: 'notices', element: <NoticesPage /> },
       { path: 'notices/:id', element: <NoticeDetailPage /> },
-      { path: 'owner', element: <OwnerDeskPage /> },
-      { path: 'post', element: <PostNoticePage /> },
-      { path: 'notices/:id/edit', element: <EditNoticePage /> },
       { path: 'impact', element: <ImpactPage /> },
-      { path: '*', element: <NotFoundPage /> }
-    ]
-  }
+
+      // auth (guests only)
+      { path: 'login', element: <GuestOnly><LoginPage /></GuestOnly> },
+      { path: 'signup/traveller', element: <GuestOnly><SignupTravellerPage /></GuestOnly> },
+      { path: 'signup/owner', element: <GuestOnly><SignupOwnerPage /></GuestOnly> },
+      { path: 'unauthorized', element: <UnauthorizedPage /> },
+
+      // owner-only
+      { path: 'owner', element: ownerOnly(<OwnerDeskPage />) },
+      { path: 'post', element: ownerOnly(<PostNoticePage />) },
+      { path: 'notices/:id/edit', element: ownerOnly(<EditNoticePage />) },
+
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
 ]);

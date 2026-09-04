@@ -1,3 +1,10 @@
 export const BELTS = ['hill_country', 'south_coast', 'east_coast', 'cultural_triangle'];
 export const ISSUES = ['landslide', 'road_closed', 'flooded_access', 'no_water', 'power_cut', 'bridge_unsafe', 'network_down', 'relocation'];
 export const STATUSES = ['open', 'caution', 'disrupted', 'closed', 'resolved'];
+export const PLACE_TYPES = ['tourism', 'camping'];
+export const FACILITIES = ['parking', 'toilets', 'food', 'drinking_water', 'electricity', 'wifi', 'changing_rooms', 'accommodation', 'first_aid', 'information_center', 'public_transport', 'accessibility'];
+export const ACTIVITIES = ['hiking', 'trekking', 'camping', 'swimming', 'surfing', 'wildlife_watching', 'sightseeing', 'photography', 'boating', 'fishing', 'bird_watching', 'cycling', 'cultural_experience'];
+export const REGULATION_CATEGORIES = ['general', 'environmental', 'safety', 'fire', 'camping', 'wildlife', 'restricted_area', 'visitor_conduct', 'opening_hours'];
+export const REGULATION_SEVERITIES = ['information', 'important', 'warning', 'critical'];
+export const CONTACT_TYPES = ['general', 'emergency', 'police', 'medical', 'park_office', 'tourism_office'];
+export const USER_ROLES = ['traveller', 'owner'];

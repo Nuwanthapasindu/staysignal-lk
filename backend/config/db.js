@@ -1,22 +1,39 @@
+import dns from 'node:dns';
 import mongoose from 'mongoose';
 import env from './env.js';
 
-let isMongoConnected = false;
+async function connectDB() {
+  mongoose.set("strictQuery", true);
 
-const connectDB = async () => {
+  // First attempt: system default DNS
   try {
-    mongoose.set('strictQuery', false);
-    await mongoose.connect(env.MONGO_URI, {
-      serverSelectionTimeoutMS: 800,
-      connectTimeoutMS: 800,
-    });
-    isMongoConnected = true;
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    isMongoConnected = false;
-    console.warn('MongoDB connection offline. Operating in fallback seed mode.');
-  }
-};
+    const conn = await mongoose.connect(env.MONGO_URI);
+    console.log(`Database connected: ${conn.connection.host} ...`);
+    return;
+  } catch (err) {
+    const issDNSError =
+      err.message?.includes("querySrv") ||
+      err.message?.includes("ECONNREFUSED") ||
+      err.message?.includes("ENOTFOUND");
 
-export const getIsMongoConnected = () => isMongoConnected;
+    if (!issDNSError) {
+      // Not a DNS issue, don't retry
+      console.error("Database connection failed:", err.message);
+      process.exit(1);
+    }
+
+    console.warn("DNS resolution failed, retrying with fallback DNS servers...");
+  }
+
+  // Second attempt: fallback DNS
+  try {
+    dns.setServers(["1.1.1.1", "8.8.8.8"]);
+    const conn = await mongoose.connect(env.MONGO_URI);
+    console.log(`Database connected (fallback DNS): ${conn.connection.host} ...`);
+  } catch (err) {
+    console.error("Database connection failed even with fallback DNS:", err.message);
+    process.exit(1);
+  }
+}
+
 export default connectDB;
