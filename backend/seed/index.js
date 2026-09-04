@@ -1,8 +1,27 @@
 import connectDB from '../config/db.js';
 import Notice from '../models/Notice.js';
 import Town from '../models/Town.js';
-import { TourismDestination } from '../models/index.js';
+import { TourismDestination, User } from '../models/index.js';
+import { hashPassword } from '../utils/password.js';
 import { noticesData, townsData, tourismSeedData } from './seedData.js';
+
+// Demo accounts documented in README.md — kept in sync with that section.
+const DEMO_USERS = [
+  { name: 'Amali Perera', email: 'amali@zionview.lk', password: 'Owner123!', role: 'owner', phone: '0771234567' },
+  { name: 'Kasun Silva', email: 'kasun@gmail.com', password: 'Travel123!', role: 'traveller' },
+];
+
+const seedDemoUsers = async () => {
+  for (const demo of DEMO_USERS) {
+    const password_hash = await hashPassword(demo.password);
+    await User.findOneAndUpdate(
+      { email: demo.email },
+      { name: demo.name, email: demo.email, password_hash, role: demo.role, phone: demo.phone },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+  }
+  console.log(`Seeded ${DEMO_USERS.length} demo users (upserted).`);
+};
 
 const seed = async () => {
   try {
@@ -20,6 +39,8 @@ const seed = async () => {
     await TourismDestination.deleteMany({});
     await TourismDestination.insertMany(tourismSeedData);
     console.log(`Seeded ${tourismSeedData.length} tourism destinations.`);
+
+    await seedDemoUsers();
 
     console.log('Database seeding complete!');
     process.exit(0);

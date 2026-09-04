@@ -5,7 +5,9 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 import env from './config/env.js';
+import { swaggerSpec } from './config/swagger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import authRoutes from './routes/auth.routes.js';
@@ -33,6 +35,37 @@ app.use(
   })
 );
 
+// API documentation (Swagger UI). Served outside the /api prefix so it is
+// unaffected by the /api 404 catch-all and JSON-only error handler below.
+// helmet's default CSP blocks Swagger UI's inline assets, so it is relaxed
+// for this path only.
+app.use(
+  '/api-docs',
+  helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }),
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'StaySignal LK API Docs',
+  })
+);
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
+
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags: [Health]
+ *     summary: Service health check
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: ok }
+ *                 time: { type: string, format: date-time }
+ */
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

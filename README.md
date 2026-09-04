@@ -111,3 +111,56 @@ and `frontend/src/features/auth/validation.js`):
 For testing the authentication and RBAC system locally, you can use the following seeded accounts:
 - **Owner Account**: `amali@zionview.lk` | Password: `Owner123!` (role=owner)
 - **Traveller Account**: `kasun@gmail.com` | Password: `Travel123!` (role=traveller)
+
+## API Documentation (Swagger)
+
+Interactive OpenAPI 3.0 docs are generated from JSDoc comments on every route
+(`backend/config/swagger.js`, built with `swagger-jsdoc` + `swagger-ui-express`).
+Both packages are installed as regular `dependencies` (not `devDependencies`)
+so the documentation ships and works in production, not just locally.
+
+| Environment | Swagger UI | Raw OpenAPI JSON |
+| --- | --- | --- |
+| Local | http://localhost:5000/api-docs | http://localhost:5000/api-docs.json |
+| Production | `<PUBLIC_API_URL host>/api-docs` — see Deployment below | `<PUBLIC_API_URL host>/api-docs.json` |
+
+The docs cover all 27 endpoints across Auth, Notices, Tourism (incl. the
+multi-image upload flow), Geography, and Impact — each with request/response
+schemas, required roles, and error shapes. Set `PUBLIC_API_URL` (and
+`PUBLIC_WEB_URL`) in the deployed backend's environment so the Swagger UI
+"servers" dropdown points at the real deployment instead of `localhost`; see
+`backend/.env.example`.
+
+## Deployment
+
+| Service | URL |
+| --- | --- |
+| Frontend | _TODO — fill in once deployed (e.g. Vercel/Netlify URL)_ |
+| Backend API | _TODO — fill in once deployed (e.g. Render/Railway URL), ends in `/api`_ |
+| Backend API docs (Swagger UI) | `<Backend API URL>/api-docs` |
+
+When deploying:
+
+1. Backend: set `CLIENT_ORIGIN` to the deployed frontend URL, `PUBLIC_API_URL`
+   to the deployed backend's `/api` base, `PUBLIC_WEB_URL` to the deployed
+   frontend URL, plus `MONGO_URI`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`.
+2. Frontend: set `VITE_API_URL` to the deployed backend's `/api` base.
+3. Update the table above with the live URLs.
+
+## User Roles & Credentials
+
+| Role | Can do | Cannot do |
+| --- | --- | --- |
+| Guest (not logged in) | Browse all public pages — notices ledger & detail, tourism directory & detail, impact, town boards | Create/edit/delete notices or tourism destinations |
+| `traveller` | Everything a guest can, plus a personalised landing on `/notices` | Create/edit/delete notices or tourism destinations; open `/owner` |
+| `owner` | Publish/edit/delete disruption notices; add/edit/delete tourism destinations incl. photo uploads; use the Host Operations Desk (`/owner`, `/post`) | — |
+
+Already-created demo account credentials (seeded/upserted by `npm run seed` —
+safe to re-run, it won't duplicate or break existing accounts):
+
+| Role | Email | Password |
+| --- | --- | --- |
+| `owner` | `amali@zionview.lk` | `Owner123!` |
+| `traveller` | `kasun@gmail.com` | `Travel123!` |
+
+⚠️ Demo credentials only — rotate or remove them before any real deployment.

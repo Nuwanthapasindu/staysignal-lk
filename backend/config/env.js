@@ -12,6 +12,8 @@ const {
   JWT_REFRESH_EXPIRES,
   MONGO_URI_TEST,
   NODE_ENV,
+  PUBLIC_API_URL,
+  PUBLIC_WEB_URL,
 } = process.env;
 
 if (!JWT_ACCESS_SECRET) throw new Error('Missing required environment variable: JWT_ACCESS_SECRET');
@@ -32,6 +34,10 @@ const env = Object.freeze({
   MONGO_URI_TEST: MONGO_URI_TEST || null,
   NODE_ENV: NODE_ENV || 'development',
   IS_PROD: NODE_ENV === 'production',
+  // Deployed base URLs, used only to label the Swagger "servers" list and in
+  // docs/scripts. Safe defaults so local dev needs no extra env vars.
+  PUBLIC_API_URL: PUBLIC_API_URL || `http://localhost:${parseInt(PORT, 10)}/api`,
+  PUBLIC_WEB_URL: PUBLIC_WEB_URL || 'http://localhost:5173',
 });
 
 export default env;

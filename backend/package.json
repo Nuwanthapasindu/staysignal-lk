@@ -24,6 +24,8 @@
     "mongoose": "^9.9.4",
     "morgan": "^1.12.0",
     "multer": "^2.3.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {
