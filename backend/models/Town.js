@@ -51,4 +51,3 @@ townSchema.set('toJSON', {
 
 const Town = mongoose.models.Town || mongoose.model('Town', townSchema);
 export default Town;
-

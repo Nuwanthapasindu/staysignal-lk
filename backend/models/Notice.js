@@ -108,4 +108,3 @@ noticeSchema.set('toJSON', {
 
 const Notice = mongoose.models.Notice || mongoose.model('Notice', noticeSchema);
 export default Notice;
-
