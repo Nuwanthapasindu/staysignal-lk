@@ -177,14 +177,18 @@ export default function Header() {
       </header>
     </>
 import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Ticker from '../../features/notices/components/Ticker';
 import { fetchTicker } from '../../features/notices/api/noticesApi';
+import { useAuth, useLogout, ROLE_LABELS } from '../../features/auth';
 
 export default function Header() {
   const location = useLocation();
   const [tickerData, setTickerData] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isReady, isAuthenticated, user } = useAuth();
+  const logout = useLogout();
 
   useEffect(() => {
     fetchTicker()
@@ -194,6 +198,7 @@ export default function Header() {
 
   // Close mobile drawer on route navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
@@ -203,6 +208,30 @@ export default function Header() {
     }
     return location.pathname === path;
   };
+
+  const isOwner = isAuthenticated && user.role === 'owner';
+
+  const authCluster = !isReady ? null : isAuthenticated ? (
+    <div className="header-auth">
+      <span className="header-auth__name">{user.name}</span>
+      <span className="role-chip" data-role={user.role}>
+        {ROLE_LABELS[user.role] ?? user.role}
+      </span>
+      <button type="button" className="linkbtn" onClick={logout}>
+        Log out
+      </button>
+    </div>
+  ) : (
+    <div className="header-auth">
+      <Link to="/login" className="nav-link">
+        Log in
+      </Link>
+      <Link to="/signup/owner" className="btn-report-disruption">
+        <span aria-hidden="true">🔑</span>
+        <span>Sign up</span>
+      </Link>
+    </div>
+  );
 
   return (
     <header className="site-header">
@@ -227,49 +256,38 @@ export default function Header() {
 
         {/* Desktop Navigation Links */}
         <nav className="site-nav hide-on-tablet" aria-label="Primary Navigation">
-          <Link
-            to="/notices"
-            className={`nav-link ${isActive('/notices') ? 'active' : ''}`}
-          >
+          <Link to="/notices" className={`nav-link ${isActive('/notices') ? 'active' : ''}`}>
             Disruption Ledger
           </Link>
-          <Link
-            to="/towns/ella"
-            className={`nav-link ${isActive('/towns/ella') ? 'active' : ''}`}
-          >
+          <Link to="/towns/ella" className={`nav-link ${isActive('/towns/ella') ? 'active' : ''}`}>
             Corridor Status
           </Link>
-          <Link
-            to="/how-it-works"
-            className={`nav-link ${isActive('/how-it-works') ? 'active' : ''}`}
-          >
+          <Link to="/how-it-works" className={`nav-link ${isActive('/how-it-works') ? 'active' : ''}`}>
             Guest Protocol
           </Link>
-          <Link
-            to="/problem"
-            className={`nav-link ${isActive('/problem') ? 'active' : ''}`}
-          >
+          <Link to="/problem" className={`nav-link ${isActive('/problem') ? 'active' : ''}`}>
             The Problem
           </Link>
-          <Link
-            to="/owner"
-            className={`nav-link ${isActive('/owner') ? 'active' : ''}`}
-          >
-            Owner Desk
-          </Link>
+          {isOwner && (
+            <Link to="/owner" className={`nav-link ${isActive('/owner') ? 'active' : ''}`}>
+              Owner Desk
+            </Link>
+          )}
         </nav>
 
         {/* Desktop Action Buttons */}
         <div className="header-actions hide-on-tablet">
+          {authCluster}
           <a href="tel:117" className="btn-emergency" title="Disaster Management Centre 117">
             <span aria-hidden="true">📞</span>
             <span>Emergency Desk</span>
           </a>
-
-          <Link to="/post" className="btn-report-disruption">
-            <span aria-hidden="true">📢</span>
-            <span>Report Disruption</span>
-          </Link>
+          {isOwner && (
+            <Link to="/post" className="btn-report-disruption">
+              <span aria-hidden="true">📢</span>
+              <span>Report Disruption</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger Toggle Button */}
@@ -304,48 +322,63 @@ export default function Header() {
             </div>
 
             <nav className="mobile-nav-links" aria-label="Mobile Navigation">
-              <Link
-                to="/notices"
-                className={`mobile-nav-item ${isActive('/notices') ? 'active' : ''}`}
-              >
+              <Link to="/notices" className={`mobile-nav-item ${isActive('/notices') ? 'active' : ''}`}>
                 <span>📋</span>
                 <span>Disruption Ledger (Public Feed)</span>
               </Link>
-              <Link
-                to="/towns/ella"
-                className={`mobile-nav-item ${isActive('/towns/ella') ? 'active' : ''}`}
-              >
+              <Link to="/towns/ella" className={`mobile-nav-item ${isActive('/towns/ella') ? 'active' : ''}`}>
                 <span>🏔️</span>
                 <span>Corridor Status & Passes</span>
               </Link>
-              <Link
-                to="/how-it-works"
-                className={`mobile-nav-item ${isActive('/how-it-works') ? 'active' : ''}`}
-              >
+              <Link to="/how-it-works" className={`mobile-nav-item ${isActive('/how-it-works') ? 'active' : ''}`}>
                 <span>⚙️</span>
                 <span>Guest Protocol & 2G Architecture</span>
               </Link>
-              <Link
-                to="/problem"
-                className={`mobile-nav-item ${isActive('/problem') ? 'active' : ''}`}
-              >
+              <Link to="/problem" className={`mobile-nav-item ${isActive('/problem') ? 'active' : ''}`}>
                 <span>📊</span>
                 <span>The Problem & Field Metrics</span>
               </Link>
-              <Link
-                to="/owner"
-                className={`mobile-nav-item ${isActive('/owner') ? 'active' : ''}`}
-              >
-                <span>🔑</span>
-                <span>Owner & Host Desk</span>
-              </Link>
+              {isOwner && (
+                <Link to="/owner" className={`mobile-nav-item ${isActive('/owner') ? 'active' : ''}`}>
+                  <span>🔑</span>
+                  <span>Owner & Host Desk</span>
+                </Link>
+              )}
             </nav>
 
             <div className="mobile-nav-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
-              <Link to="/post" className="btn-report-disruption" style={{ justifyContent: 'center', width: '100%', height: '42px' }}>
-                <span aria-hidden="true">✍️</span>
-                <span>Post Operational Notice</span>
-              </Link>
+              {isReady && isAuthenticated ? (
+                <>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Signed in as <strong>{user.name}</strong> ({ROLE_LABELS[user.role] ?? user.role})
+                  </span>
+                  {isOwner && (
+                    <Link to="/post" className="btn-report-disruption" style={{ justifyContent: 'center', width: '100%', height: '42px' }}>
+                      <span aria-hidden="true">✍️</span>
+                      <span>Post Operational Notice</span>
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-emergency"
+                    style={{ justifyContent: 'center', width: '100%', height: '42px' }}
+                    onClick={logout}
+                  >
+                    <span>Log out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn-report-disruption" style={{ justifyContent: 'center', width: '100%', height: '42px' }}>
+                    <span aria-hidden="true">🔓</span>
+                    <span>Log in</span>
+                  </Link>
+                  <Link to="/signup/owner" className="btn-emergency" style={{ justifyContent: 'center', width: '100%', height: '42px' }}>
+                    <span aria-hidden="true">🔑</span>
+                    <span>Sign up your stay</span>
+                  </Link>
+                </>
+              )}
               <a href="tel:117" className="btn-emergency" style={{ justifyContent: 'center', width: '100%', height: '42px' }}>
                 <span aria-hidden="true">📞</span>
                 <span>DMC Emergency Helpline (117)</span>

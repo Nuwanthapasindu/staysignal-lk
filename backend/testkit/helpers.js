@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import env from '../config/env.js';
+import { connectMongoose } from '../config/db.js';
 import app from '../app.js';
 
 if (!env.MONGO_URI_TEST) {
@@ -10,7 +11,7 @@ let server;
 let baseUrl;
 
 export const startServer = async () => {
-  await mongoose.connect(env.MONGO_URI_TEST);
+  await connectMongoose(env.MONGO_URI_TEST);
   await new Promise((resolve) => {
     server = app.listen(0, resolve);
   });
