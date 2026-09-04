@@ -122,7 +122,7 @@ so the documentation ships and works in production, not just locally.
 | Environment | Swagger UI | Raw OpenAPI JSON |
 | --- | --- | --- |
 | Local | http://localhost:5000/api-docs | http://localhost:5000/api-docs.json |
-| Production | `<PUBLIC_API_URL host>/api-docs` — see Deployment below | `<PUBLIC_API_URL host>/api-docs.json` |
+| Production | https://staysignal-lk-production-cc60.up.railway.app/api-docs | https://staysignal-lk-production-cc60.up.railway.app/api-docs.json |
 
 The docs cover all 27 endpoints across Auth, Notices, Tourism (incl. the
 multi-image upload flow), Geography, and Impact — each with request/response
@@ -135,9 +135,12 @@ schemas, required roles, and error shapes. Set `PUBLIC_API_URL` (and
 
 | Service | URL |
 | --- | --- |
-| Frontend | _TODO — fill in once deployed (e.g. Vercel/Netlify URL)_ |
-| Backend API | _TODO — fill in once deployed (e.g. Render/Railway URL), ends in `/api`_ |
-| Backend API docs (Swagger UI) | `<Backend API URL>/api-docs` |
+| Frontend | https://affectionate-solace-production-ba76.up.railway.app |
+| Backend API | https://staysignal-lk-production-cc60.up.railway.app/api |
+| Backend API docs (Swagger UI) | https://staysignal-lk-production-cc60.up.railway.app/api-docs |
+
+Hosted on [Railway](https://railway.app) — one service for the frontend
+(Vite build), one for the backend (Express).
 
 When deploying:
 
