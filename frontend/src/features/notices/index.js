@@ -10,7 +10,7 @@ export { default as MobileFilterSheet } from './components/MobileFilterSheet';
 export { default as CallStayModal } from './components/CallStayModal';
 
 export { default as useNotices } from './hooks/useNotices';
-export { fetchNotices, fetchNoticeById, fetchNoticeAlternatives, fetchTicker, postNotice } from './api/noticesApi';
+export { fetchNotices, fetchNoticeById, fetchNoticeAlternatives, fetchTicker, postNotice, updateNotice, deleteNotice } from './api/noticesApi';
 export { validateNoticeForm, validateNoticeField, isValidSriLankanPhone, VALID_STATUSES, VALID_ISSUES } from './utils/noticeValidator';
 
 export { default as NoticesPage } from './pages/NoticesPage';

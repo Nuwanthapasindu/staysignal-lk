@@ -1,4 +1,4 @@
-import { get, post } from '../../../shared/api/client';
+import { get, post, put, del } from '../../../shared/api/client';
 
 export const fetchNotices = async (params = {}) => {
   const q = new URLSearchParams();
@@ -17,3 +17,5 @@ export const fetchNoticeById = (id) => get(`/notices/${encodeURIComponent(id)}`)
 export const fetchNoticeAlternatives = (id) => get(`/notices/${encodeURIComponent(id)}/alternatives`);
 export const fetchTicker = () => get('/ticker');
 export const postNotice = (noticeData) => post('/notices', noticeData);
+export const updateNotice = (id, noticeData) => put(`/notices/${encodeURIComponent(id)}`, noticeData);
+export const deleteNotice = (id) => del(`/notices/${encodeURIComponent(id)}`);

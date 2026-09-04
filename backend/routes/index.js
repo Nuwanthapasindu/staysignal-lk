@@ -1,6 +1,5 @@
 import express from 'express';
 import tourismRoutes from './tourismRoutes.js';
-import noticesRoutes from './noticesRoutes.js';
 import geographyRoutes from './geographyRoutes.js';
 
 const router = express.Router();
@@ -14,7 +13,6 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/tourism', tourismRoutes);
-router.use('/notices', noticesRoutes);
 router.use('/', geographyRoutes);
 
 export default router;

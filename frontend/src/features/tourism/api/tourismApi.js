@@ -1,5 +1,15 @@
 import { get, post, put, patch, del } from '../../../shared/api/client';
-import { tourismList, tourismStats, sigiriyaDetail } from '../data/tourismData';
+
+const EMPTY_STATS = {
+  totalDestinations: 0,
+  totalDestinationsSub: '',
+  activeOpen: 0,
+  activeOpenSub: '',
+  weatherAdvisory: 0,
+  weatherAdvisorySub: '',
+  draftRevisions: 0,
+  draftRevisionsSub: '',
+};
 
 const buildQuery = (params = {}) => {
   const q = new URLSearchParams();
@@ -11,29 +21,24 @@ const buildQuery = (params = {}) => {
   return s ? `?${s}` : '';
 };
 
-// List — reflects the DB. Bundled data is only a last resort when the API is down.
+// List — reflects the DB only. No bundled fallback data.
 export const fetchTourismDestinations = async (params = {}) => {
   try {
     const res = await get(`/tourism${buildQuery(params)}`);
     return {
       destinations: res.data ?? [],
-      stats: res.stats || tourismStats,
+      stats: res.stats || EMPTY_STATS,
       offline: false,
     };
   } catch (err) {
-    console.warn('[Tourism API] offline fallback:', err.message);
-    return { destinations: tourismList, stats: tourismStats, offline: true };
+    console.warn('[Tourism API] request failed:', err.message);
+    return { destinations: [], stats: EMPTY_STATS, offline: true };
   }
 };
 
 export const fetchTourismDestination = async (slug) => {
-  try {
-    const res = await get(`/tourism/${encodeURIComponent(slug)}`);
-    return res.data;
-  } catch (err) {
-    console.warn('[Tourism API] offline fallback:', err.message);
-    return sigiriyaDetail;
-  }
+  const res = await get(`/tourism/${encodeURIComponent(slug)}`);
+  return res.data;
 };
 
 // CRUD — let errors propagate so the page can show them.

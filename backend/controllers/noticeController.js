@@ -4,7 +4,10 @@ import {
   getNoticeAlternatives,
   getTickerData,
   addNotice,
+  updateNotice as updateNoticeStore,
+  deleteNotice as deleteNoticeStore,
 } from '../services/noticeStore.js';
+import { validateNoticePayload } from '../validators/noticeValidator.js';
 
 export const listNotices = async (req, res) => {
   try {
@@ -49,6 +52,42 @@ export const getTicker = async (req, res) => {
   } catch (error) {
     console.error('Error in getTicker:', error);
     res.status(500).json({ error: 'Failed to fetch ticker data' });
+  }
+};
+
+export const updateNotice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await getNoticeById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Notice not found' });
+    }
+
+    const merged = { ...existing, ...req.body };
+    const { isValid, errors } = validateNoticePayload(merged);
+    if (!isValid) {
+      return res.status(400).json({ error: 'Validation failed for operational notice', details: errors });
+    }
+
+    const updated = await updateNoticeStore(id, req.body);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error in updateNotice:', error);
+    res.status(500).json({ error: 'Failed to update notice' });
+  }
+};
+
+export const deleteNotice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ok = await deleteNoticeStore(id);
+    if (!ok) {
+      return res.status(404).json({ error: 'Notice not found' });
+    }
+    res.json({ success: true, message: 'Notice removed from the Corridor Ledger' });
+  } catch (error) {
+    console.error('Error in deleteNotice:', error);
+    res.status(500).json({ error: 'Failed to delete notice' });
   }
 };
 

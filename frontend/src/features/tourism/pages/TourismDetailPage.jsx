@@ -22,8 +22,6 @@ import {
   ChevronRight,
   Sparkles
 } from 'lucide-react';
-import { sigiriyaDetail } from '../data/tourismData';
-
 const EMPTY = {
   specs: [],
   dossier: { title: '', badge: '', ref: '', paragraphs: [], highlights: [], gallery: [] },
@@ -50,17 +48,18 @@ export default function TourismDetailPage() {
     };
   }, [id]);
 
-  // Merge the fetched record over a template so every section has data to render.
-  const base = fetched || sigiriyaDetail;
   const place = {
     ...EMPTY,
-    ...sigiriyaDetail,
-    ...base,
-    dossier: { ...EMPTY.dossier, ...(sigiriyaDetail.dossier || {}), ...(base.dossier || {}) },
+    ...(fetched || {}),
+    dossier: { ...EMPTY.dossier, ...((fetched && fetched.dossier) || {}) },
   };
 
   if (loading) {
     return <div className="page-container" style={{ padding: '48px 16px' }}>Loading destination…</div>;
+  }
+
+  if (!fetched) {
+    return <div className="page-container" style={{ padding: '48px 16px' }}>Destination not found.</div>;
   }
 
   return (

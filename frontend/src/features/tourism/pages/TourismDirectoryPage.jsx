@@ -28,8 +28,7 @@ import {
   Send,
   BookOpen
 } from 'lucide-react';
-import { tourismStats as defaultStats, tourismList as defaultList } from '../data/tourismData';
-import { 
+import {
   fetchTourismDestinations, 
   updateTourismDestinationStatus, 
   deleteTourismDestination 
@@ -41,8 +40,17 @@ export default function TourismDirectoryPage() {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
-  const [destinations, setDestinations] = useState(defaultList);
-  const [stats, setStats] = useState(defaultStats);
+  const [destinations, setDestinations] = useState([]);
+  const [stats, setStats] = useState({
+    totalDestinations: 0,
+    totalDestinationsSub: '',
+    activeOpen: 0,
+    activeOpenSub: '',
+    weatherAdvisory: 0,
+    weatherAdvisorySub: '',
+    draftRevisions: 0,
+    draftRevisionsSub: '',
+  });
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
