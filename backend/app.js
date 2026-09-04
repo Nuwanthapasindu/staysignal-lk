@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import env from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
 import { HttpError } from './utils/httpError.js';
+import noticeRoutes from './routes/noticeRoutes.js';
+import townRoutes from './routes/townRoutes.js';
 
 const app = express();
 
@@ -34,6 +36,13 @@ app.use((err, req, res, next) => {
   }
   console.error(err);
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong.' } });
+// API Routes
+app.use('/api', noticeRoutes);
+app.use('/api', townRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 export default app;

@@ -1,2 +1,5 @@
-// M1 geography
-export const fetchTowns = () => {};
+import { get } from '../../../shared/api/client';
+
+export const fetchTowns = async () => {
+  return get('/api/towns');
+};
