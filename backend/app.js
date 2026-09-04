@@ -5,9 +5,9 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import env from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
-import { HttpError } from './utils/httpError.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import townRoutes from './routes/townRoutes.js';
+import { HttpError } from './utils/httpError.js';
 
 const app = express();
 
@@ -18,8 +18,15 @@ app.use(express.json());
 app.use(cookieParser());
 if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api', noticeRoutes);
+app.use('/api', townRoutes);
 
 // 404 for unmatched API routes
 app.use('/api', (req, res) => {
@@ -36,13 +43,6 @@ app.use((err, req, res, next) => {
   }
   console.error(err);
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong.' } });
-// API Routes
-app.use('/api', noticeRoutes);
-app.use('/api', townRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 export default app;
