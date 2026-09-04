@@ -12,8 +12,6 @@ import {
   Check, 
   XCircle, 
   CheckCircle2, 
-  Download, 
-  Bookmark, 
   History, 
   FileText, 
   Crosshair, 
@@ -856,25 +854,6 @@ export default function AddTourismPlacePage() {
               <span className="badge-tag" style={{ fontSize: '10px', color: '#b91c1c', backgroundColor: '#fee2e2' }}>No Drones</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                style={{ flex: 1, justifyContent: 'center', fontSize: '12px' }}
-                onClick={() => alert('Generating PDF Foreign Tourist Demand Dossier...')}
-              >
-                <Download size={13} /> PDF Desk Dossier
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                style={{ padding: '8px 10px' }}
-                title="Bookmark Desk Card"
-                onClick={() => alert('Card saved to Offline Bookmarks.')}
-              >
-                <Bookmark size={14} />
-              </button>
-            </div>
 
             <div style={{ fontSize: '10.5px', color: 'var(--text-tertiary)', textAlign: 'center', marginTop: '6px' }}>
               Simulates Offline Foreign Tourist Demand Card
