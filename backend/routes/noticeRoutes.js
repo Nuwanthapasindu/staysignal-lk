@@ -6,6 +6,7 @@ import {
   getTicker,
   createNotice,
 } from '../controllers/noticeController.js';
+import { noticeValidationMiddleware } from '../validators/noticeValidator.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/ticker', getTicker);
 
 // Notice endpoints
 router.get('/notices', listNotices);
-router.post('/notices', createNotice);
+router.post('/notices', noticeValidationMiddleware, createNotice);
 router.get('/notices/:id', getNotice);
 router.get('/notices/:id/alternatives', getAlternatives);
 

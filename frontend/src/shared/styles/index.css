@@ -795,7 +795,7 @@ input, select, textarea {
 
 @media (max-width: 680px) {
   .filter-dropdowns {
-    display: none; /* Controlled via mobile filter sheet on small screens */
+    display: none;
   }
 }
 
@@ -842,7 +842,7 @@ input, select, textarea {
 }
 
 /* ==========================================================================
-   NOTICE CARDS & RESPONSIVE GRID (3-COL / 2-COL / 1-COL)
+   NOTICE CARDS & RESPONSIVE GRID
    ========================================================================== */
 .notices-grid {
   display: grid;
@@ -1745,7 +1745,7 @@ input, select, textarea {
 }
 
 /* ==========================================================================
-   POST NOTICE FORM & PREVIEW LAYOUT
+   POST NOTICE FORM & FIELD VALIDATION STYLES
    ========================================================================== */
 .post-notice-layout {
   display: grid;
@@ -1796,12 +1796,24 @@ input, select, textarea {
   margin-bottom: 18px;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
 .form-label {
   display: block;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 5px;
+  margin-bottom: 0;
+}
+
+.field-counter {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .form-hint {
@@ -1830,6 +1842,37 @@ input, select, textarea {
   background-color: #FFFFFF;
   border-color: var(--brand-forest);
   box-shadow: 0 0 0 3px rgba(22, 58, 41, 0.1);
+}
+
+/* Validation Feedback Classes */
+.form-input.input-error,
+.form-select.input-error,
+.form-textarea.input-error {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+}
+
+.form-input.input-error:focus,
+.form-select.input-error:focus,
+.form-textarea.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.form-input.input-success,
+.form-select.input-success,
+.form-textarea.input-success {
+  border-color: #10B981;
+}
+
+.field-error-message {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #DC2626;
+  font-weight: 500;
+  margin-top: 4px;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .form-textarea {

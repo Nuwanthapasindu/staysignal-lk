@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { NoticeCard } from '../../notices';
+import { NoticeCard, validateNoticeForm, isValidSriLankanPhone, postNotice } from '../../notices';
 import { fetchTowns } from '../../geography/api/geographyApi';
-import { postNotice } from '../../notices/api/noticesApi';
 
 const TEMPLATES = [
   {
@@ -64,7 +63,7 @@ export default function PostNoticePage() {
   const [towns, setTowns] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [publishedNotice, setPublishedNotice] = useState(null);
-  const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -83,6 +82,10 @@ export default function PostNoticePage() {
     verifiedBy: 'Estate Dispatch',
   });
 
+  // Track field interactions for inline validation feedback
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+
   useEffect(() => {
     fetchTowns()
       .then((data) => {
@@ -92,6 +95,11 @@ export default function PostNoticePage() {
       })
       .catch((err) => console.warn('Could not load towns', err));
   }, []);
+
+  // Compute validation live
+  const validation = useMemo(() => {
+    return validateNoticeForm(formData);
+  }, [formData]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => {
@@ -105,6 +113,25 @@ export default function PostNoticePage() {
       }
       return updated;
     });
+
+    if (submitError) setSubmitError(null);
+
+    // Live validate field if touched
+    if (touched[field]) {
+      const currentValidation = validateNoticeForm({ ...formData, [field]: value });
+      setFieldErrors((prev) => ({
+        ...prev,
+        [field]: currentValidation.errors[field] || null,
+      }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    setFieldErrors((prev) => ({
+      ...prev,
+      [field]: validation.errors[field] || null,
+    }));
   };
 
   const applyTemplate = (template) => {
@@ -112,6 +139,14 @@ export default function PostNoticePage() {
       ...prev,
       ...template.data,
     }));
+    // Clear template-affected errors
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      Object.keys(template.data).forEach((key) => {
+        delete next[key];
+      });
+      return next;
+    });
   };
 
   const currentTownObj = towns.find((t) => t.id === formData.town);
@@ -140,23 +175,43 @@ export default function PostNoticePage() {
     updatedAt: new Date().toISOString(),
   };
 
+  const isPhoneValid = isValidSriLankanPhone(formData.contactNumber);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      setError('Please enter your property / stay name.');
-      return;
-    }
-    if (!formData.headline.trim()) {
-      setError('Please enter a short headline for the notice.');
-      return;
-    }
-    if (!formData.contactNumber.trim()) {
-      setError('Please provide a contact phone number for verification.');
+
+    // Mark all fields touched
+    const allTouched = {
+      title: true,
+      town: true,
+      corridor: true,
+      status: true,
+      issue: true,
+      headline: true,
+      description: true,
+      contactNumber: true,
+      bypassAdvice: true,
+      verifiedBy: true,
+    };
+    setTouched(allTouched);
+
+    const { isValid, errors } = validateNoticeForm(formData);
+    setFieldErrors(errors);
+
+    if (!isValid) {
+      setSubmitError('Please correct the highlighted fields before broadcasting to the Corridor Ledger.');
+      // Scroll to first invalid field
+      const firstErrorField = Object.keys(errors)[0];
+      const el = document.getElementById(firstErrorField);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
       return;
     }
 
     setSubmitting(true);
-    setError(null);
+    setSubmitError(null);
 
     try {
       const payload = {
@@ -170,9 +225,9 @@ export default function PostNoticePage() {
         description: formData.description.trim(),
         bypassAdvice: formData.bypassAdvice.trim(),
         utilities: {
-          generatorStatus: formData.generatorStatus,
-          waterStatus: formData.waterStatus,
-          connectivityStatus: formData.connectivityStatus,
+          generatorStatus: formData.generatorStatus.trim(),
+          waterStatus: formData.waterStatus.trim(),
+          connectivityStatus: formData.connectivityStatus.trim(),
         },
         contactNumber: formData.contactNumber.trim(),
         verifiedBy: formData.verifiedBy.trim() || 'Verified Host',
@@ -182,7 +237,13 @@ export default function PostNoticePage() {
       setPublishedNotice(result);
     } catch (err) {
       console.error('Error posting notice:', err);
-      setError(err.message || 'Failed to publish notice. Please check your connection.');
+      const serverDetails = err.response?.data?.details;
+      if (serverDetails && typeof serverDetails === 'object') {
+        setFieldErrors(serverDetails);
+        setSubmitError(err.response?.data?.error || 'Validation failed on server. Please check the fields below.');
+      } else {
+        setSubmitError(err.response?.data?.error || err.message || 'Failed to publish notice. Please check your network connection.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -219,6 +280,8 @@ export default function PostNoticePage() {
     );
   }
 
+  const activeErrorsCount = Object.keys(validation.errors).length;
+
   return (
     <div className="page-wrapper">
       {/* Page Header */}
@@ -226,7 +289,7 @@ export default function PostNoticePage() {
         <div className="hero-text-block">
           <div className="hero-tracker">
             <span aria-hidden="true">✍️</span>
-            <span>Host & Dispatcher Gateway · 30-Second Form</span>
+            <span>Host & Dispatcher Gateway · Form Validation Active</span>
           </div>
           <h1 className="hero-title">
             Post an Operational Notice
@@ -256,15 +319,18 @@ export default function PostNoticePage() {
         </div>
       </div>
 
-      {error && (
-        <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
-          ⚠️ {error}
+      {submitError && (
+        <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '18px' }}>⚠️</span>
+          <div>
+            <strong>Validation Notice:</strong> {submitError}
+          </div>
         </div>
       )}
 
       {/* Split Layout: Form on Left, Live Notice Preview on Right */}
       <div className="post-notice-layout">
-        <form className="post-form-card" onSubmit={handleSubmit}>
+        <form className="post-form-card" onSubmit={handleSubmit} noValidate>
           {/* Section 1: Property & Corridor */}
           <h3 className="form-section-title">
             <span>🏠</span>
@@ -273,25 +339,36 @@ export default function PostNoticePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="title">Stay / Property Name *</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="title">Stay / Property Name *</label>
+                <span className="field-counter">{formData.title.length}/80</span>
+              </div>
               <input
                 id="title"
                 type="text"
-                className="form-input"
+                className={`form-input ${touched.title && fieldErrors.title ? 'input-error' : ''} ${touched.title && !fieldErrors.title && formData.title.length >= 3 ? 'input-success' : ''}`}
                 required
+                maxLength={80}
                 placeholder="e.g. Zion View, Mandira Cottage"
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
+                onBlur={() => handleBlur('title')}
               />
+              {touched.title && fieldErrors.title && (
+                <div className="field-error-message">⚠️ {fieldErrors.title}</div>
+              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="town">Town / Corridor Hub *</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="town">Town / Corridor Hub *</label>
+              </div>
               <select
                 id="town"
-                className="form-select"
+                className={`form-select ${touched.town && fieldErrors.town ? 'input-error' : ''}`}
                 value={formData.town}
                 onChange={(e) => handleChange('town', e.target.value)}
+                onBlur={() => handleBlur('town')}
               >
                 {towns.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -299,20 +376,32 @@ export default function PostNoticePage() {
                   </option>
                 ))}
               </select>
+              {touched.town && fieldErrors.town && (
+                <div className="field-error-message">⚠️ {fieldErrors.town}</div>
+              )}
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="corridor">Specific Road Passage / Corridor</label>
+            <div className="field-label-row">
+              <label className="form-label" htmlFor="corridor">Specific Road Passage / Corridor *</label>
+              <span className="field-counter">{formData.corridor.length}/100</span>
+            </div>
             <input
               id="corridor"
               type="text"
-              className="form-input"
+              className={`form-input ${touched.corridor && fieldErrors.corridor ? 'input-error' : ''} ${touched.corridor && !fieldErrors.corridor && formData.corridor.length >= 3 ? 'input-success' : ''}`}
               placeholder="e.g. Ella Valley · A23 Corridor, Dambatenne Road"
+              maxLength={100}
               value={formData.corridor}
               onChange={(e) => handleChange('corridor', e.target.value)}
+              onBlur={() => handleBlur('corridor')}
             />
-            <p className="form-hint">Helps drivers pinpoint the exact section of road.</p>
+            {touched.corridor && fieldErrors.corridor ? (
+              <div className="field-error-message">⚠️ {fieldErrors.corridor}</div>
+            ) : (
+              <p className="form-hint">Helps drivers and guides pinpoint the exact section of road (3–100 chars).</p>
+            )}
           </div>
 
           {/* Section 2: Operational Status Tier */}
@@ -352,16 +441,22 @@ export default function PostNoticePage() {
                 </div>
               ))}
             </div>
+            {touched.status && fieldErrors.status && (
+              <div className="field-error-message">⚠️ {fieldErrors.status}</div>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="issue">Disruption Category</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="issue">Disruption Category *</label>
+              </div>
               <select
                 id="issue"
-                className="form-select"
+                className={`form-select ${touched.issue && fieldErrors.issue ? 'input-error' : ''}`}
                 value={formData.issue}
                 onChange={(e) => handleChange('issue', e.target.value)}
+                onBlur={() => handleBlur('issue')}
               >
                 <option value="road_closed">🚫 Road Closed / Culvert Washout</option>
                 <option value="landslide">🪨 Landslide / Earth Slip</option>
@@ -372,43 +467,72 @@ export default function PostNoticePage() {
                 <option value="network_down">📡 Telecom / Network Down</option>
                 <option value="relocation">🔄 Relocation Notice</option>
               </select>
+              {touched.issue && fieldErrors.issue && (
+                <div className="field-error-message">⚠️ {fieldErrors.issue}</div>
+              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="headline">Short Headline *</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="headline">Short Headline *</label>
+                <span className="field-counter">{formData.headline.length}/120</span>
+              </div>
               <input
                 id="headline"
                 type="text"
-                className="form-input"
+                className={`form-input ${touched.headline && fieldErrors.headline ? 'input-error' : ''} ${touched.headline && !fieldErrors.headline && formData.headline.length >= 5 ? 'input-success' : ''}`}
                 required
+                maxLength={120}
                 placeholder="e.g. Road closed · Wellawaya-Ella passage"
                 value={formData.headline}
                 onChange={(e) => handleChange('headline', e.target.value)}
+                onBlur={() => handleBlur('headline')}
               />
+              {touched.headline && fieldErrors.headline && (
+                <div className="field-error-message">⚠️ {fieldErrors.headline}</div>
+              )}
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="description">Advisory Details & Situation Report</label>
+            <div className="field-label-row">
+              <label className="form-label" htmlFor="description">Advisory Details & Situation Report *</label>
+              <span className="field-counter">{formData.description.length}/1000</span>
+            </div>
             <textarea
               id="description"
-              className="form-textarea"
-              placeholder="Describe current road conditions, clearance progress, or water bowser arrival time..."
+              className={`form-textarea ${touched.description && fieldErrors.description ? 'input-error' : ''} ${touched.description && !fieldErrors.description && formData.description.length >= 10 ? 'input-success' : ''}`}
+              placeholder="Describe current road conditions, clearance progress, or water bowser arrival time (minimum 10 chars)..."
+              maxLength={1000}
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
+              onBlur={() => handleBlur('description')}
             />
+            {touched.description && fieldErrors.description ? (
+              <div className="field-error-message">⚠️ {fieldErrors.description}</div>
+            ) : (
+              <p className="form-hint">Provide clear instructions for guests and emergency transit (10–1000 chars).</p>
+            )}
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="bypassAdvice">Bypass Guidance / Vehicle Advice</label>
+            <div className="field-label-row">
+              <label className="form-label" htmlFor="bypassAdvice">Bypass Guidance / Vehicle Advice</label>
+              <span className="field-counter">{formData.bypassAdvice.length}/300</span>
+            </div>
             <input
               id="bypassAdvice"
               type="text"
-              className="form-input"
+              className={`form-input ${touched.bypassAdvice && fieldErrors.bypassAdvice ? 'input-error' : ''}`}
               placeholder="e.g. 4x4 pickup shuttle active from rail station. Avoid heavy vans on Poonagala bypass."
+              maxLength={300}
               value={formData.bypassAdvice}
               onChange={(e) => handleChange('bypassAdvice', e.target.value)}
+              onBlur={() => handleBlur('bypassAdvice')}
             />
+            {touched.bypassAdvice && fieldErrors.bypassAdvice && (
+              <div className="field-error-message">⚠️ {fieldErrors.bypassAdvice}</div>
+            )}
           </div>
 
           {/* Section 3: Operational Utilities */}
@@ -424,6 +548,7 @@ export default function PostNoticePage() {
                 id="generator"
                 type="text"
                 className="form-input"
+                maxLength={60}
                 placeholder="e.g. 6pm - 10pm Active"
                 value={formData.generatorStatus}
                 onChange={(e) => handleChange('generatorStatus', e.target.value)}
@@ -436,6 +561,7 @@ export default function PostNoticePage() {
                 id="water"
                 type="text"
                 className="form-input"
+                maxLength={60}
                 placeholder="e.g. 2000L Reserve Tank"
                 value={formData.waterStatus}
                 onChange={(e) => handleChange('waterStatus', e.target.value)}
@@ -448,6 +574,7 @@ export default function PostNoticePage() {
                 id="connectivity"
                 type="text"
                 className="form-input"
+                maxLength={60}
                 placeholder="e.g. Dialog 4G + Starlink"
                 value={formData.connectivityStatus}
                 onChange={(e) => handleChange('connectivityStatus', e.target.value)}
@@ -463,28 +590,47 @@ export default function PostNoticePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="phone">Host Phone Number *</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="phone">Host Phone Number *</label>
+                {isPhoneValid && (
+                  <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: 600 }}>✓ Valid LK Phone</span>
+                )}
+              </div>
               <input
                 id="phone"
                 type="tel"
-                className="form-input"
+                className={`form-input ${touched.contactNumber && fieldErrors.contactNumber ? 'input-error' : ''} ${touched.contactNumber && !fieldErrors.contactNumber && isPhoneValid ? 'input-success' : ''}`}
                 required
-                placeholder="e.g. 077 412 8901"
+                placeholder="e.g. 077 412 8901 or +94 77 123 4567"
                 value={formData.contactNumber}
                 onChange={(e) => handleChange('contactNumber', e.target.value)}
+                onBlur={() => handleBlur('contactNumber')}
               />
+              {touched.contactNumber && fieldErrors.contactNumber ? (
+                <div className="field-error-message">⚠️ {fieldErrors.contactNumber}</div>
+              ) : (
+                <p className="form-hint">Supports Sri Lankan mobile (07X) and landline (0XX) formats.</p>
+              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="verifiedBy">Verification Source</label>
+              <div className="field-label-row">
+                <label className="form-label" htmlFor="verifiedBy">Verification Source</label>
+                <span className="field-counter">{formData.verifiedBy.length}/60</span>
+              </div>
               <input
                 id="verifiedBy"
                 type="text"
-                className="form-input"
+                className={`form-input ${touched.verifiedBy && fieldErrors.verifiedBy ? 'input-error' : ''}`}
+                maxLength={60}
                 placeholder="e.g. Estate Dispatch, Verified Host"
                 value={formData.verifiedBy}
                 onChange={(e) => handleChange('verifiedBy', e.target.value)}
+                onBlur={() => handleBlur('verifiedBy')}
               />
+              {touched.verifiedBy && fieldErrors.verifiedBy && (
+                <div className="field-error-message">⚠️ {fieldErrors.verifiedBy}</div>
+              )}
             </div>
           </div>
 
@@ -506,6 +652,27 @@ export default function PostNoticePage() {
             <span className="preview-badge-pill">Real-time</span>
           </div>
 
+          {/* Validation Status Indicator */}
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: activeErrorsCount === 0 ? '#DCFCE7' : '#FEF3C7',
+              color: activeErrorsCount === 0 ? '#166534' : '#92400E',
+              border: `1px solid ${activeErrorsCount === 0 ? '#BBF7D0' : '#FDE68A'}`,
+            }}
+          >
+            <span>
+              {activeErrorsCount === 0 ? '✓ Ready to Publish' : `⚠️ ${activeErrorsCount} field(s) require attention`}
+            </span>
+            <span style={{ fontSize: '11px', opacity: 0.85 }}>Corridor Standard</span>
+          </div>
+
           <NoticeCard notice={previewNotice} />
 
           <div style={{ backgroundColor: '#FAF8F2', border: '1px solid #EFEBE1', borderRadius: '8px', padding: '12px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -516,3 +683,4 @@ export default function PostNoticePage() {
     </div>
   );
 }
+
