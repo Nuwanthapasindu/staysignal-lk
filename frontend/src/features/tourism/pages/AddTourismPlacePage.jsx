@@ -869,17 +869,9 @@ export default function AddTourismPlacePage() {
               >
                 {isSubmitting ? (isEditing ? 'Saving...' : 'Publishing...') : (isEditing ? 'Save Changes' : 'Publish Destination to Live Registry')}
               </button>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => alert('Draft revision stored.')}
-              >
-                Save Draft Revisions
-              </button>
-              <button 
-                type="button" 
-                className="btn-icon" 
+              <button
+                type="button"
+                className="btn-icon"
                 style={{ width: '100%', justifyContent: 'center', color: 'var(--text-secondary)' }}
                 onClick={() => navigate('/admin/tourism')}
               >
