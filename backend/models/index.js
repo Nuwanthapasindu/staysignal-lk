@@ -3,7 +3,6 @@ import Corridor from './Corridor.js';
 import Property from './Property.js';
 import Notice from './Notice.js';
 import NoticeEvent from './NoticeEvent.js';
-import AiRewrite from './AiRewrite.js';
 import ImpactSnapshot from './ImpactSnapshot.js';
 import Place from './Place.js';
 import PlaceImage from './PlaceImage.js';
@@ -12,6 +11,8 @@ import PlaceActivity from './PlaceActivity.js';
 import PlaceRegulation from './PlaceRegulation.js';
 import PlacePermit from './PlacePermit.js';
 import PlaceContact from './PlaceContact.js';
+import User from './User.js';
+import RefreshToken from './RefreshToken.js';
 import * as Enums from './enums.js';
 
 export {
@@ -20,7 +21,6 @@ export {
   Property,
   Notice,
   NoticeEvent,
-  AiRewrite,
   ImpactSnapshot,
   Place,
   PlaceImage,
@@ -29,5 +29,7 @@ export {
   PlaceRegulation,
   PlacePermit,
   PlaceContact,
+  User,
+  RefreshToken,
   Enums
 };

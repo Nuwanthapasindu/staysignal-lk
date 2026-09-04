@@ -7,3 +7,4 @@ export const ACTIVITIES = ['hiking', 'trekking', 'camping', 'swimming', 'surfing
 export const REGULATION_CATEGORIES = ['general', 'environmental', 'safety', 'fire', 'camping', 'wildlife', 'restricted_area', 'visitor_conduct', 'opening_hours'];
 export const REGULATION_SEVERITIES = ['information', 'important', 'warning', 'critical'];
 export const CONTACT_TYPES = ['general', 'emergency', 'police', 'medical', 'park_office', 'tourism_office'];
+export const USER_ROLES = ['traveller', 'owner'];
