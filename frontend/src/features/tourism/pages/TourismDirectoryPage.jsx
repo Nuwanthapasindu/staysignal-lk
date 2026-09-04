@@ -29,6 +29,7 @@ import {
   deleteTourismDestination,
   resolveMediaUrl,
 } from '../api/tourismApi';
+import { useAuth } from '../../auth';
 
 const STATUS_META = {
   open: { bg: '#e5f5ed', fg: '#166534', label: 'Open' },
@@ -39,6 +40,8 @@ const STATUS_META = {
 
 export default function TourismDirectoryPage() {
   const isAdmin = useLocation().pathname.startsWith('/admin');
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
@@ -186,14 +189,18 @@ export default function TourismDirectoryPage() {
               : "Explore Sri Lanka's cultural, nature, and coastal destinations with current access status, admission tariffs, and visitor guidance."}
           </p>
         </div>
-        {isAdmin && (
+        {(isAdmin || isOwner) && (
           <div className="editorial-actions">
-            <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
-              <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync Feeds'}
-            </button>
-            <Link to="/admin/tourism/new" className="btn btn-primary">
-              <Plus size={14} /> Add Tourism Place
-            </Link>
+            {isAdmin && (
+              <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
+                <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync Feeds'}
+              </button>
+            )}
+            {isOwner && (
+              <Link to="/admin/tourism/new" className="btn btn-primary">
+                <Plus size={14} /> Add New Tourism
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -523,51 +530,84 @@ export default function TourismDirectoryPage() {
           {filteredDestinations.map((item) => {
             const meta = STATUS_META[item.status] || STATUS_META.open;
             const img = item.images?.[0]?.url || item.heroImage;
+            const rowId = item._id || item.id;
             return (
-              <Link
-                key={item._id || item.id || item.slug}
-                to={`/tourism/${item.slug}`}
+              <div
+                key={rowId || item.slug}
                 className="content-card"
-                style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none', color: 'inherit' }}
+                style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
               >
-                <div style={{ position: 'relative', height: '150px', backgroundColor: 'var(--bg-surface-subtle)' }}>
-                  {img ? (
-                    <img
-                      src={resolveMediaUrl(img)}
-                      alt={item.name}
-                      loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+                <Link
+                  to={`/tourism/${item.slug}`}
+                  style={{ display: 'flex', flexDirection: 'column', flex: 1, textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div style={{ position: 'relative', height: '150px', backgroundColor: 'var(--bg-surface-subtle)' }}>
+                    {img ? (
+                      <img
+                        src={resolveMediaUrl(img)}
+                        alt={item.name}
+                        loading="lazy"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+                        {getCategoryIcon(item.category)}
+                      </div>
+                    )}
+                    <span
+                      className="badge-tag"
+                      style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: meta.bg, color: meta.fg, fontSize: '10.5px', fontWeight: 700 }}
+                    >
+                      {meta.label}
+                    </span>
+                  </div>
+                  <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
                       {getCategoryIcon(item.category)}
+                      <span>{item.category}</span>
                     </div>
-                  )}
-                  <span
-                    className="badge-tag"
-                    style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: meta.bg, color: meta.fg, fontSize: '10.5px', fontWeight: 700 }}
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-green-deep)', lineHeight: 1.3, margin: '2px 0' }}>
+                      {item.name}
+                    </h3>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {[item.district, item.province].filter(Boolean).join(', ')}
+                    </div>
+                    {item.foreignTariff && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, marginTop: 'auto', paddingTop: '8px' }}>
+                        {item.foreignTariff}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+
+                {isOwner && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      borderTop: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-surface-subtle)',
+                    }}
                   >
-                    {meta.label}
-                  </span>
-                </div>
-                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
-                    {getCategoryIcon(item.category)}
-                    <span>{item.category}</span>
+                    <Link
+                      to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '11.5px' }}
+                    >
+                      <Edit size={12} /> Edit
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '11.5px', color: '#991B1B' }}
+                      onClick={() => handleDelete(rowId, item.name)}
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
                   </div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-green-deep)', lineHeight: 1.3, margin: '2px 0' }}>
-                    {item.name}
-                  </h3>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {[item.district, item.province].filter(Boolean).join(', ')}
-                  </div>
-                  {item.foreignTariff && (
-                    <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, marginTop: 'auto', paddingTop: '8px' }}>
-                      {item.foreignTariff}
-                    </div>
-                  )}
-                </div>
-              </Link>
+                )}
+              </div>
             );
           })}
         </div>
