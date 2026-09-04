@@ -38,7 +38,6 @@ export default function AddTourismPlacePage() {
   const isEditing = !!editSlug;
 
   const [name, setName] = useState('');
-  const [nodeId, setNodeId] = useState('');
   const [category, setCategory] = useState('Heritage & Archaeological');
   const [smsSummary, setSmsSummary] = useState('');
   const [overview, setOverview] = useState('');
@@ -111,7 +110,6 @@ export default function AddTourismPlacePage() {
         const d = await fetchTourismDestination(editSlug);
         if (cancelled || !d) return;
         if (d.name != null) setName(d.name);
-        if (d.nodeId != null) setNodeId(d.nodeId);
         if (d.category != null) setCategory(d.category);
         if (d.smsSummary != null) setSmsSummary(d.smsSummary);
         if (d.overview != null) setOverview(d.overview);
@@ -152,7 +150,6 @@ export default function AddTourismPlacePage() {
     setIsSubmitting(true);
     const payload = {
       name,
-      nodeId,
       category,
       province,
       district,
@@ -260,20 +257,9 @@ export default function AddTourismPlacePage() {
               <span className="form-helper">Official nomenclature registered with the Department of Archaeology / SLTDA</span>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Official Node / SLTDA ID</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={nodeId}
-                  onChange={(e) => setNodeId(e.target.value)}
-                  placeholder="Auto-generated if left blank"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Heritage / Tourism Category <span className="required">*</span></label>
-                <select 
+            <div className="form-group">
+              <label className="form-label">Heritage / Tourism Category <span className="required">*</span></label>
+              <select
                   className="form-select"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -285,7 +271,6 @@ export default function AddTourismPlacePage() {
                   <option value="Waterfalls & Gorges">Waterfalls & Gorges</option>
                   <option value="Coastal & Marine">Coastal & Marine</option>
                 </select>
-              </div>
             </div>
 
             <div className="form-group">
