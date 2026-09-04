@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Landmark, 
   Trees, 
@@ -17,13 +17,11 @@ import {
   Eye,
   Edit,
   Trash2,
-  Radio,
-  FileSpreadsheet, 
-  DollarSign, 
-  CheckSquare, 
-  ChevronLeft, 
+  FileSpreadsheet,
+  DollarSign,
+  CheckSquare,
+  ChevronLeft,
   ChevronRight,
-  Send,
   BookOpen
 } from 'lucide-react';
 import {
@@ -32,7 +30,15 @@ import {
   resolveMediaUrl,
 } from '../api/tourismApi';
 
+const STATUS_META = {
+  open: { bg: '#e5f5ed', fg: '#166534', label: 'Open' },
+  caution: { bg: '#fef3c7', fg: '#92400e', label: 'Caution' },
+  danger: { bg: '#fee2e2', fg: '#991b1b', label: 'Suspended' },
+  draft: { bg: '#f1f5f9', fg: '#475569', label: 'Draft' },
+};
+
 export default function TourismDirectoryPage() {
+  const isAdmin = useLocation().pathname.startsWith('/admin');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
@@ -162,31 +168,34 @@ export default function TourismDirectoryPage() {
       {/* Breadcrumb Bar */}
       <div className="breadcrumb-bar">
         <div className="breadcrumb-links">
-          <Link to="/" className="breadcrumb-link">Admin Portal</Link>
+          <Link to="/" className="breadcrumb-link">Home</Link>
           <span className="breadcrumb-sep">&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Tourism Directory Management</span>
-        </div>
-        <div className="badge-tag" style={{ color: '#166534', backgroundColor: '#e5f5ed' }}>
-          SLTDA Regional Gateway Active
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+            {isAdmin ? 'Tourism Directory Management' : 'Tourism Destinations'}
+          </span>
         </div>
       </div>
 
       {/* Editorial Header */}
       <div className="editorial-header">
         <div className="editorial-header-left">
-          <h1 className="editorial-title">Tourism Destinations & Heritage Registry</h1>
+          <h1 className="editorial-title">Tourism Destinations &amp; Heritage Registry</h1>
           <p className="editorial-subtitle">
-            Manage public visibility, foreign visitor admission tariffs, seasonal accessibility, and safety regulations across Sri Lanka's cultural, nature, and coastal attractions.
+            {isAdmin
+              ? "Manage public visibility, foreign visitor admission tariffs, seasonal accessibility, and safety regulations across Sri Lanka's cultural, nature, and coastal attractions."
+              : "Explore Sri Lanka's cultural, nature, and coastal destinations with current access status, admission tariffs, and visitor guidance."}
           </p>
         </div>
-        <div className="editorial-actions">
-          <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
-            <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync SLTDA Feeds'}
-          </button>
-          <Link to="/admin/tourism/new" className="btn btn-primary">
-            <Plus size={14} /> Add Tourism Place
-          </Link>
-        </div>
+        {isAdmin && (
+          <div className="editorial-actions">
+            <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
+              <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync Feeds'}
+            </button>
+            <Link to="/admin/tourism/new" className="btn btn-primary">
+              <Plus size={14} /> Add Tourism Place
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* 4 Stat Cards */}
@@ -300,7 +309,7 @@ export default function TourismDirectoryPage() {
         </div>
       </div>
 
-      {/* Registered Tourism Destinations Table Card */}
+      {isAdmin ? (
       <div className="data-table-card">
         <div className="table-header-bar">
           <div className="table-header-title">
@@ -504,37 +513,65 @@ export default function TourismDirectoryPage() {
           </div>
         </div>
       </div>
-
-      {/* Direct Central Secretariat Dispatch Relay Banner */}
-      <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-md)', backgroundColor: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bbf7d0', flexShrink: 0 }}>
-            <Radio size={20} color="var(--brand-green-deep)" />
-          </div>
-          <div>
-            <h4 style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>
-              Direct Central Secretariat Dispatch Relay
-            </h4>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '650px' }}>
-              Changes saved here reflect instantaneously across regional hotel lobby displays in Kandy, Ella, Galle, and Colombo Fort Tourist Information Desks.
-            </p>
-          </div>
+      ) : (
+        <div className="tourism-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px', marginTop: '4px' }}>
+          {filteredDestinations.length === 0 && (
+            <div className="content-card" style={{ gridColumn: '1 / -1' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No destinations match your filters.</p>
+            </div>
+          )}
+          {filteredDestinations.map((item) => {
+            const meta = STATUS_META[item.status] || STATUS_META.open;
+            const img = item.images?.[0]?.url || item.heroImage;
+            return (
+              <Link
+                key={item._id || item.id || item.slug}
+                to={`/tourism/${item.slug}`}
+                className="content-card"
+                style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none', color: 'inherit' }}
+              >
+                <div style={{ position: 'relative', height: '150px', backgroundColor: 'var(--bg-surface-subtle)' }}>
+                  {img ? (
+                    <img
+                      src={resolveMediaUrl(img)}
+                      alt={item.name}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+                      {getCategoryIcon(item.category)}
+                    </div>
+                  )}
+                  <span
+                    className="badge-tag"
+                    style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: meta.bg, color: meta.fg, fontSize: '10.5px', fontWeight: 700 }}
+                  >
+                    {meta.label}
+                  </span>
+                </div>
+                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                    {getCategoryIcon(item.category)}
+                    <span>{item.category}</span>
+                  </div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-green-deep)', lineHeight: 1.3, margin: '2px 0' }}>
+                    {item.name}
+                  </h3>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {[item.district, item.province].filter(Boolean).join(', ')}
+                  </div>
+                  {item.foreignTariff && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, marginTop: 'auto', paddingTop: '8px' }}>
+                      {item.foreignTariff}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--brand-green-deep)', fontWeight: 600 }}>
-            <span className="ticker-dot pulse"></span>
-            Mesh 3G Relay: Active
-          </span>
-          <button 
-            className="btn btn-primary btn-sm" 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--brand-green-deep)' }}
-            onClick={() => alert('Emergency bulletin dispatch broadcasted to 28 hotel kiosks!')}
-          >
-            <Send size={12} /> Push Emergency Bulletin
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
