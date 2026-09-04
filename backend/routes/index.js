@@ -1,6 +1,5 @@
 import express from 'express';
 import tourismRoutes from './tourismRoutes.js';
-import campingRoutes from './campingRoutes.js';
 import noticesRoutes from './noticesRoutes.js';
 import geographyRoutes from './geographyRoutes.js';
 
@@ -15,7 +14,6 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/tourism', tourismRoutes);
-router.use('/camping', campingRoutes);
 router.use('/notices', noticesRoutes);
 router.use('/', geographyRoutes);
 

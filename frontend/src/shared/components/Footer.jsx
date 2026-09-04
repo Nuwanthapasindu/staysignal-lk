@@ -30,7 +30,6 @@ export default function Footer() {
               <h4 className="footer-column-title">Directories</h4>
               <ul className="footer-link-list">
                 <li><Link to="/tourism">Tourism Places</Link></li>
-                <li><Link to="/camping">Camping Sites</Link></li>
                 <li><Link to="/impact">Impact</Link></li>
               </ul>
             </div>

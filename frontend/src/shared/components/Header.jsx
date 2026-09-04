@@ -33,7 +33,6 @@ export default function Header() {
     <>
       <Link to="/notices" className={`nav-link ${isActive('/notices') ? 'active' : ''}`}>Disruption Ledger</Link>
       <Link to="/tourism" className={`nav-link ${isActive('/tourism') ? 'active' : ''}`}>Tourism</Link>
-      <Link to="/camping" className={`nav-link ${isActive('/camping') ? 'active' : ''}`}>Camping</Link>
       <Link to="/how-it-works" className={`nav-link ${isActive('/how-it-works') ? 'active' : ''}`}>Guest Protocol</Link>
       <Link to="/problem" className={`nav-link ${isActive('/problem') ? 'active' : ''}`}>The Problem</Link>
       {isOwner && <Link to="/owner" className={`nav-link ${isActive('/owner') ? 'active' : ''}`}>Owner Desk</Link>}

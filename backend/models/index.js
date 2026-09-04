@@ -7,8 +7,6 @@ import ImpactSnapshot from './ImpactSnapshot.js';
 import ImpactStory from './ImpactStory.js';
 import ImpactProblem from './ImpactProblem.js';
 import TourismDestination from './TourismDestination.js';
-import Campsite from './Campsite.js';
-import PermitBooking from './PermitBooking.js';
 import Place from './Place.js';
 import PlaceImage from './PlaceImage.js';
 import PlaceFacility from './PlaceFacility.js';
@@ -30,8 +28,6 @@ export {
   ImpactStory,
   ImpactProblem,
   TourismDestination,
-  Campsite,
-  PermitBooking,
   Place,
   PlaceImage,
   PlaceFacility,

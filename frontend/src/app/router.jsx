@@ -5,7 +5,6 @@ import { NoticesPage, NoticeDetailPage } from '../features/notices';
 import { OwnerDeskPage, PostNoticePage, EditNoticePage } from '../features/owner';
 import { ImpactPage, NotFoundPage } from '../features/impact';
 import { TourismDirectoryPage, AddTourismPlacePage, TourismDetailPage } from '../features/tourism';
-import { CampingDirectoryPage, AddCampingPage, CampingDetailPage } from '../features/camping';
 import {
   LoginPage,
   SignupTravellerPage,
@@ -42,13 +41,6 @@ export const router = createBrowserRouter([
       { path: 'tourism/:id', element: <TourismDetailPage /> },
       { path: 'admin/tourism', element: <TourismDirectoryPage /> },
       { path: 'admin/tourism/new', element: <AddTourismPlacePage /> },
-
-      // camping
-      { path: 'camping', element: <CampingDirectoryPage /> },
-      { path: 'camping/new', element: <AddCampingPage /> },
-      { path: 'camping/:id', element: <CampingDetailPage /> },
-      { path: 'admin/camping', element: <CampingDirectoryPage /> },
-      { path: 'admin/camping/new', element: <AddCampingPage /> },
 
       // auth (guests only)
       { path: 'login', element: <GuestOnly><LoginPage /></GuestOnly> },

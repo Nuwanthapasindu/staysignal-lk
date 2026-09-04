@@ -27,6 +27,14 @@ export const getAllTowns = async () => {
   return memoryTowns;
 };
 
+export const getTownBySlug = async (slug) => {
+  const target = String(slug || '').toLowerCase().trim();
+  const towns = await getAllTowns();
+  return towns.find(
+    (t) => (t.slug || '').toLowerCase() === target || (t.id || '').toLowerCase() === target
+  );
+};
+
 export const getNotices = async (filters = {}) => {
   const {
     town,

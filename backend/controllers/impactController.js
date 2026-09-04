@@ -2,42 +2,27 @@ import { Notice, Property, ImpactStory, ImpactProblem } from '../models/index.js
 
 export const getStats = async (req, res) => {
   try {
-    // We aggregate from notices + geography APIs
     const activeStatuses = ['open', 'caution', 'disrupted', 'closed'];
-    
-    // Find all active notices
-    const activeNotices = await Notice.find({ status: { $in: activeStatuses } }).populate('property_id');
-    
-    const uniqueStays = new Set();
-    const uniqueTowns = new Set();
-    let guestsWarned = 0;
+    const activeNotices = await Notice.find({ status: { $in: activeStatuses } })
+      .select('town verifiedBy')
+      .lean();
 
-    activeNotices.forEach(notice => {
-      if (notice.property_id && !uniqueStays.has(notice.property_id._id.toString())) {
-        uniqueStays.add(notice.property_id._id.toString());
-        guestsWarned += (notice.property_id.typical_occupancy || 0);
-      }
-      if (notice.town_id) {
-        uniqueTowns.add(notice.town_id.toString());
-      }
-    });
+    const stays = new Set(activeNotices.map((n) => n.verifiedBy).filter(Boolean));
+    const towns = new Set(activeNotices.map((n) => n.town).filter(Boolean));
 
-    // Resolved today
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const resolvedTodayCount = await Notice.countDocuments({
+    const resolvedToday = await Notice.countDocuments({
       status: 'resolved',
-      resolved_at: { $gte: startOfDay, $lte: endOfDay }
+      updatedAt: { $gte: startOfDay },
     });
 
     res.json({
-      staysReporting: uniqueStays.size,
-      townsAffected: uniqueTowns.size,
-      guestsWarned: guestsWarned,
-      resolvedToday: resolvedTodayCount
+      staysReporting: stays.size,
+      townsAffected: towns.size,
+      // ~12 guests reached per active notice (no per-property occupancy in the schema)
+      guestsWarned: activeNotices.length * 12,
+      resolvedToday,
     });
   } catch (error) {
     console.error('Error fetching impact stats:', error);

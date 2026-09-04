@@ -30,7 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', noticeRoutes); // /ticker, /notices, /notices/:id, /notices/:id/alternatives
 app.use('/api', townRoutes); // /towns
 app.use('/api/impact', impactRoutes);
-app.use('/api', apiRoutes); // /tourism, /camping, geography (/towns/:slug, /corridors)
+app.use('/api', apiRoutes); // /tourism, geography (/towns/:slug, /corridors)
 
 // 404 for unmatched API routes
 app.use('/api', (req, res) => {
