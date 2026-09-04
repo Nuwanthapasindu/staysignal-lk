@@ -118,10 +118,10 @@ During these frequent disruption events:
 
 | # | Team Member Name | Student / Reg ID | Role | Key Contributions |
 |---|------------------|------------------|------|-------------------|
-| 1 | **Nuwantha Pasindu** | *[Insert ID]* | Full-Stack Developer & Lead | Backend REST API (`/api/notices`, `/api/ticker`, `/api/towns`), Public Corridor Ledger UI, Post Notice validation engine, Mobile responsive design system, and documentation. |
-| 2 | *Nethmi Balasooriya* | *IT24102631* | *[Frontend for Notice and impact Pages]* | *[Corridor Status Page, Guest Protocol Page, and Notice Detail View implementations]* |
-| 3 | *[Team Member 3]* | *[Insert ID]* | *[Backend / QA Engineer]* | *[Database models, seed data curation, edge case validation testing, and API integration]* |
-| 4 | *[Team Member 4]* | *[Insert ID]* | *[UX Designer / Researcher]* | *[Highland corridor problem research, user journey mapping, and visual aesthetic styling]* |
+| 1 | **Dias H.N.P.K.** | *IT24101003* | Full-Stack Developer & Lead | Backend REST API (`/api/notices`, `/api/ticker`, `/api/towns`), Public Corridor Ledger UI, Post Notice validation engine, Mobile responsive design system, and documentation. |
+| 2 | **Nethmi Balasooriya** | *IT24102631* | *[Frontend for Notice and impact Pages]* | *[Corridor Status Page, Guest Protocol Page, and Notice Detail View implementations]* |
+| 3 | **Rathnaweera O.V.** | *IT24101757* | *[Backend / QA Engineer]* | *[Database models, seed data curation, edge case validation testing, and API integration]* |
+| 4 | **Bandara D.B.A.H.W.** | *IT24102009* | *[UX Designer / Researcher]* | *[Highland corridor problem research, user journey mapping, and visual aesthetic styling]* |
 
 ---
 
