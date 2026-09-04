@@ -31,6 +31,7 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Middleware
+
 app.use(helmet());
 app.use(cors({ origin: env.CLIENT_ORIGIN }));
 app.use(express.json());
@@ -39,5 +40,14 @@ app.use(morgan('dev'));
 // Routes
 import impactRoutes from './routes/impactRoutes.js';
 app.use('/api/impact', impactRoutes);
+// API Routes
+app.use('/api', noticeRoutes);
+app.use('/api', townRoutes);
+app.use('/api/impact', impactRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
 
 export default app;

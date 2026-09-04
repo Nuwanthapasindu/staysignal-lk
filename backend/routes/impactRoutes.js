@@ -3,7 +3,6 @@ import { getStats, getStories, createStory, updateStory, deleteStory, getProblem
 
 const router = express.Router();
 
-// Routes
 /**
  * @swagger
  * /api/impact/stats:
