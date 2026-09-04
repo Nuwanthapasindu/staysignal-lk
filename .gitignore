@@ -7,3 +7,4 @@ frontend/dist
 backend/data/
 data/
 *.log
+package-lock.json

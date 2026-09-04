@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchTourismDestination } from '../api/tourismApi';
+import { fetchTourismDestination, resolveMediaUrl } from '../api/tourismApi';
 import { 
   Landmark, 
   ShieldCheck, 
@@ -23,6 +23,7 @@ import {
   Sparkles
 } from 'lucide-react';
 const EMPTY = {
+  images: [],
   specs: [],
   dossier: { title: '', badge: '', ref: '', paragraphs: [], highlights: [], gallery: [] },
   siteRules: [],
@@ -149,6 +150,39 @@ export default function TourismDetailPage() {
           ))}
         </div>
       </div>
+
+      {/* Site Photography */}
+      {Array.isArray(place.images) && place.images.length > 0 && (
+        <div className="content-card" style={{ marginTop: '16px' }}>
+          <h2 className="content-card-title" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Landmark size={15} color="var(--brand-green-deep)" /> Site Photography
+          </h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '10px',
+            }}
+          >
+            {place.images.map((img, i) => (
+              <a
+                key={img._id || i}
+                href={resolveMediaUrl(img.url)}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'block', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}
+              >
+                <img
+                  src={resolveMediaUrl(img.url)}
+                  alt={img.originalName || `${place.name} photo ${i + 1}`}
+                  loading="lazy"
+                  style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block' }}
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Layout */}
       <div className="public-content-layout">

@@ -20,13 +20,18 @@ import {
   AlertCircle,
   Clock,
   PhoneCall,
-  CameraOff
+  CameraOff,
+  ImagePlus,
+  X
 } from 'lucide-react';
 import {
   createTourismDestination,
   updateTourismDestination,
   fetchTourismDestination,
+  resolveMediaUrl,
 } from '../api/tourismApi';
+
+const MAX_IMAGES = 10;
 
 export default function AddTourismPlacePage() {
   const navigate = useNavigate();
@@ -68,6 +73,37 @@ export default function AddTourismPlacePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // Site photography
+  const [existingImages, setExistingImages] = useState([]); // [{ _id, url, originalName }]
+  const [newFiles, setNewFiles] = useState([]); // File[]
+  const [removeImageIds, setRemoveImageIds] = useState([]); // string[]
+
+  // Object-URL previews for freshly-picked files; revoked on change/unmount.
+  const newPreviews = React.useMemo(() => newFiles.map((f) => URL.createObjectURL(f)), [newFiles]);
+  useEffect(() => () => newPreviews.forEach((u) => URL.revokeObjectURL(u)), [newPreviews]);
+
+  const totalImageCount =
+    existingImages.filter((img) => !removeImageIds.includes(String(img._id))).length + newFiles.length;
+
+  const handlePickFiles = (e) => {
+    const picked = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'));
+    if (!picked.length) return;
+    const room = MAX_IMAGES - totalImageCount;
+    if (room <= 0) {
+      setError(`You can attach at most ${MAX_IMAGES} images.`);
+    } else {
+      setNewFiles((prev) => [...prev, ...picked.slice(0, room)]);
+    }
+    e.target.value = '';
+  };
+
+  const removeNewFile = (idx) => setNewFiles((prev) => prev.filter((_, i) => i !== idx));
+
+  const toggleRemoveExisting = (imageId) => {
+    const key = String(imageId);
+    setRemoveImageIds((prev) => (prev.includes(key) ? prev.filter((i) => i !== key) : [...prev, key]));
+  };
+
   // When ?edit=<slug> is present, load that destination into the form.
   useEffect(() => {
     if (!editSlug) return;
@@ -96,6 +132,7 @@ export default function AddTourismPlacePage() {
         if (d.contacts?.touristPolice != null) setTouristPolice(d.contacts.touristPolice);
         if (d.contacts?.hospital != null) setHospital(d.contacts.hospital);
         if (d.contacts?.ambulance != null) setAmbulance(d.contacts.ambulance);
+        if (Array.isArray(d.images)) setExistingImages(d.images);
       } catch (err) {
         if (!cancelled) setError(`Could not load "${editSlug}" for editing: ${err.message}`);
       }
@@ -137,9 +174,9 @@ export default function AddTourismPlacePage() {
     };
     try {
       if (isEditing) {
-        await updateTourismDestination(editSlug, payload);
+        await updateTourismDestination(editSlug, payload, { imageFiles: newFiles, removeImageIds });
       } else {
-        await createTourismDestination(payload);
+        await createTourismDestination(payload, newFiles);
       }
       navigate('/admin/tourism');
     } catch (err) {
@@ -598,6 +635,173 @@ export default function AddTourismPlacePage() {
                 <span className="form-helper">Islandwide toll-free service</span>
               </div>
             </div>
+          </div>
+
+          {/* Section 6: Site Photography & Visual Assets */}
+          <div className="form-section-card">
+            <div className="form-section-header">
+              <div className="section-icon-box">
+                <ImagePlus size={16} />
+              </div>
+              <div>
+                <h2 className="section-title">Section 6: Site Photography & Visual Assets</h2>
+                <p className="section-subtitle">Upload up to {MAX_IMAGES} images (JPEG / PNG / WebP, max 5&nbsp;MB each). Stored on the registry file server.</p>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: existingImages.length || newFiles.length ? '16px' : 0 }}>
+              <label
+                className="form-label"
+                htmlFor="tourism-image-input"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '18px',
+                  border: '1.5px dashed var(--border-medium)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 500,
+                  background: 'var(--bg-surface-subtle)',
+                }}
+              >
+                <ImagePlus size={16} color="var(--brand-green-deep)" />
+                <span>Choose images ({totalImageCount}/{MAX_IMAGES} attached)</span>
+              </label>
+              <input
+                id="tourism-image-input"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePickFiles}
+                style={{ display: 'none' }}
+              />
+              <span className="form-helper">Files upload when you publish or save the destination.</span>
+            </div>
+
+            {(existingImages.length > 0 || newFiles.length > 0) && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: '10px',
+                }}
+              >
+                {existingImages.map((img) => {
+                  const marked = removeImageIds.includes(String(img._id));
+                  return (
+                    <div
+                      key={img._id}
+                      style={{
+                        position: 'relative',
+                        borderRadius: 'var(--radius-md)',
+                        overflow: 'hidden',
+                        border: `1px solid ${marked ? '#dc2626' : 'var(--border-subtle)'}`,
+                        opacity: marked ? 0.45 : 1,
+                      }}
+                    >
+                      <img
+                        src={resolveMediaUrl(img.url)}
+                        alt={img.originalName || 'Site photo'}
+                        style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        title={marked ? 'Keep this image' : 'Remove this image'}
+                        onClick={() => toggleRemoveExisting(img._id)}
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          background: marked ? '#166534' : 'rgba(220,38,38,0.92)',
+                          color: '#fff',
+                          borderRadius: '50%',
+                          width: '22px',
+                          height: '22px',
+                          padding: 0,
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {marked ? <span style={{ fontSize: '11px' }}>↺</span> : <X size={13} />}
+                      </button>
+                      {marked && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            fontSize: '9px',
+                            textAlign: 'center',
+                            background: '#dc2626',
+                            color: '#fff',
+                            padding: '2px',
+                          }}
+                        >
+                          WILL BE REMOVED
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {newFiles.map((file, idx) => (
+                  <div
+                    key={`new-${idx}`}
+                    style={{
+                      position: 'relative',
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                      border: '1px solid var(--brand-green-deep)',
+                    }}
+                  >
+                    <img
+                      src={newPreviews[idx]}
+                      alt={file.name}
+                      style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      title="Discard"
+                      onClick={() => removeNewFile(idx)}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        background: 'rgba(220,38,38,0.92)',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        width: '22px',
+                        height: '22px',
+                        padding: 0,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        fontSize: '9px',
+                        textAlign: 'center',
+                        background: 'var(--brand-green-deep)',
+                        color: '#fff',
+                        padding: '2px',
+                      }}
+                    >
+                      NEW
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

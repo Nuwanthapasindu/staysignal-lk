@@ -29,9 +29,10 @@ import {
   BookOpen
 } from 'lucide-react';
 import {
-  fetchTourismDestinations, 
-  updateTourismDestinationStatus, 
-  deleteTourismDestination 
+  fetchTourismDestinations,
+  updateTourismDestinationStatus,
+  deleteTourismDestination,
+  resolveMediaUrl,
 } from '../api/tourismApi';
 
 export default function TourismDirectoryPage() {
@@ -388,6 +389,13 @@ export default function TourismDirectoryPage() {
 
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {(item.images?.[0]?.url || item.heroImage) && (
+                          <img
+                            src={resolveMediaUrl(item.images?.[0]?.url || item.heroImage)}
+                            alt=""
+                            style={{ width: '34px', height: '34px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-subtle)' }}
+                          />
+                        )}
                         <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
                           {item.name}
                         </span>

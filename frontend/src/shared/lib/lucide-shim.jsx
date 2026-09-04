@@ -59,6 +59,10 @@ const P = {
   ShieldCheck: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V6l8-3 8 3Z"/><path d="m9 12 2 2 4-4"/>',
   CameraOff: '<path d="m2 2 20 20"/><path d="M7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16"/><path d="M9.5 4h5L17 7h3a2 2 0 0 1 2 2v7.5"/><path d="M14.1 14.1a3 3 0 0 1-4.2-4.2"/>',
   ExternalLink: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  Image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  ImagePlus: '<path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/>',
+  X: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  UploadCloud: '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>',
 };
 
 const makeIcon = (d) =>
@@ -140,3 +144,7 @@ export const Tent = makeIcon(P.Tent);
 export const ShieldCheck = makeIcon(P.ShieldCheck);
 export const CameraOff = makeIcon(P.CameraOff);
 export const ExternalLink = makeIcon(P.ExternalLink);
+export const Image = makeIcon(P.Image);
+export const ImagePlus = makeIcon(P.ImagePlus);
+export const X = makeIcon(P.X);
+export const UploadCloud = makeIcon(P.UploadCloud);

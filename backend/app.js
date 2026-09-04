@@ -1,9 +1,13 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import env from './config/env.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import authRoutes from './routes/auth.routes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import townRoutes from './routes/townRoutes.js';
@@ -19,6 +23,15 @@ app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
+
+// Uploaded media (multer local filesystem adapter). helmet's default
+// cross-origin-resource-policy would block <img> loads from the Vite origin.
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
 
 // Health check
 app.get('/api/health', (req, res) => {
