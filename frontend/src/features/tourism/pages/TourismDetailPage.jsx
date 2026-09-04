@@ -43,38 +43,22 @@ export default function TourismDetailPage() {
         </div>
       </div>
 
-      {/* Hero Section */}
-      <div className="public-hero-container">
-        <img 
-          src={place.heroImage} 
-          alt={place.name} 
-          className="public-hero-image"
-        />
-        <div className="hero-overlay"></div>
-
-        <div className="hero-content-top">
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <span className="badge-tag" style={{ backgroundColor: 'rgba(22, 71, 52, 0.9)', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Landmark size={13} /> UNESCO WORLD HERITAGE SITE #184
-            </span>
-            <span className="badge-tag" style={{ backgroundColor: 'rgba(22, 101, 52, 0.9)', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span className="ticker-dot pulse" style={{ backgroundColor: '#4ade80' }}></span>
-              OPERATIONAL STATUS: OPEN & UNOBSTRUCTED
-            </span>
-          </div>
-          <span className="badge-tag" style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+      {/* Header */}
+      <div className="content-card" style={{ marginTop: '16px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <span className="badge-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Landmark size={13} /> UNESCO WORLD HERITAGE SITE #184
+          </span>
+          <span className="badge-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span className="ticker-dot pulse" style={{ backgroundColor: '#4ade80' }}></span>
+            OPERATIONAL STATUS: OPEN &amp; UNOBSTRUCTED
+          </span>
+          <span className="badge-tag" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <Compass size={13} /> ELEVATION: 349M ASL
           </span>
         </div>
-
-        <div className="hero-content-bottom">
-          <div className="hero-category-label">
-            {place.subHeading}
-          </div>
-          <h1 className="hero-title">
-            {place.name}
-          </h1>
-        </div>
+        <div className="hero-category-label">{place.subHeading}</div>
+        <h1 className="hero-title" style={{ color: 'var(--brand-green-deep)' }}>{place.name}</h1>
       </div>
 
       {/* Quick Action Bar */}
@@ -172,17 +156,6 @@ export default function TourismDetailPage() {
               ))}
             </div>
 
-            {/* Gallery Quad */}
-            <div className="gallery-quad-grid" style={{ marginTop: '20px' }}>
-              {place.dossier.gallery.map((img, i) => (
-                <div key={i} style={{ position: 'relative', height: '110px', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                  <img src={img.image} alt={img.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', bottom: 0, insetInline: 0, padding: '4px 8px', background: 'linear-gradient(transparent, rgba(0,0,0,0.8))', color: '#ffffff', fontSize: '10.5px', fontWeight: 600 }}>
-                    {img.title}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Card 2: Site Rules & Regulations */}

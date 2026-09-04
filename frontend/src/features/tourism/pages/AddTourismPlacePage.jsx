@@ -560,20 +560,11 @@ export default function AddTourismPlacePage() {
               </span>
             </div>
 
-            <div style={{ position: 'relative', width: '100%', height: '170px', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '14px' }}>
-              <img 
-                src="https://images.unsplash.com/photo-1588598198321-9735fd52455b?auto=format&fit=crop&w=600&q=80" 
-                alt="Sigiriya Fortress"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', gap: '6px' }}>
-                <span className="badge-tag" style={{ backgroundColor: '#166534', color: '#ffffff', fontSize: '10px' }}>
-                  AVAILABLE 06:30
-                </span>
-                <span className="badge-tag" style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: '#ffffff', fontSize: '10px' }}>
-                  UNESCO 1982
-                </span>
-              </div>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <span className="badge-tag" style={{ backgroundColor: '#e5f5ed', color: '#166534', fontSize: '10px' }}>
+                AVAILABLE 06:30
+              </span>
+              <span className="badge-tag" style={{ fontSize: '10px' }}>UNESCO 1982</span>
             </div>
 
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.25 }}>
