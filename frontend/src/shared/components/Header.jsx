@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Ticker from '../../features/notices/components/Ticker';
 import { fetchTicker } from '../../features/notices/api/noticesApi';
@@ -10,6 +10,34 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isReady, isAuthenticated, user } = useAuth();
   const logout = useLogout();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDocClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+    };
+    const onEsc = (e) => e.key === 'Escape' && setUserMenuOpen(false);
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [userMenuOpen]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUserMenuOpen(false);
+  }, [location.pathname]);
+
+  const getInitials = (name = '') => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   useEffect(() => {
     fetchTicker()
@@ -40,10 +68,91 @@ export default function Header() {
   );
 
   const authCluster = !isReady ? null : isAuthenticated ? (
-    <div className="header-auth">
-      <span className="header-auth__name">{user.name}</span>
-      <span className="role-chip" data-role={user.role}>{ROLE_LABELS[user.role] ?? user.role}</span>
-      <button type="button" className="linkbtn" onClick={logout}>Log out</button>
+    <div className="header-user" ref={userMenuRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        className="header-user__avatar"
+        onClick={() => setUserMenuOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={userMenuOpen}
+        aria-label="Account menu"
+        title={user.name}
+        style={{
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          border: '1px solid var(--border-medium, #d8d2c4)',
+          background: 'var(--brand-forest, #163A29)',
+          color: '#fff',
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '0.5px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {getInitials(user.name)}
+      </button>
+
+      {userMenuOpen && (
+        <div
+          role="menu"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: '220px',
+            background: '#fff',
+            border: '1px solid var(--border-medium, #d8d2c4)',
+            borderRadius: '10px',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.14)',
+            padding: '14px',
+            zIndex: 60,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: 'var(--brand-forest, #163A29)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {getInitials(user.name)}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary, #1c1c1c)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.name}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary, #6b6b6b)' }}>
+                {ROLE_LABELS[user.role] ?? user.role}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-emergency"
+            onClick={() => {
+              setUserMenuOpen(false);
+              logout();
+            }}
+            style={{ width: '100%', justifyContent: 'center', height: '38px' }}
+          >
+            <span>Log out</span>
+          </button>
+        </div>
+      )}
     </div>
   ) : (
     <div className="header-auth">
