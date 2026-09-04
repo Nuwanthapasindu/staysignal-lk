@@ -1,51 +1,84 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { NoticeCard } from '../../notices';
+import { fetchNotices, deleteNotice, updateNotice, getStatusConfig, formatTimeAgo } from '../../notices';
+import { useAuth } from '../../auth';
+
+const QUICK_STATUSES = [
+  { id: 'open', label: 'Open & Clear', color: '#16A34A' },
+  { id: 'caution', label: 'Caution', color: '#D97706' },
+  { id: 'disrupted', label: 'Disrupted', color: '#D93829' },
+  { id: 'resolved', label: 'Resolved', color: '#0F766E' },
+];
 
 export default function OwnerDeskPage() {
-  const [currentStatus, setCurrentStatus] = useState('disrupted');
-  const [generatorState, setGeneratorState] = useState('6:00 PM - 10:00 PM Active');
-  const [waterState, setWaterState] = useState('Gravity Feed 3000L Reserve');
-  const [connectivityState, setConnectivityState] = useState('Dialog 4G + Starlink Relay Active');
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const { user } = useAuth();
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [flash, setFlash] = useState(null);
 
-  const mockOwnerNotice = {
-    id: 'notice-zion-view',
-    title: 'Zion View',
-    town: 'ella',
-    townName: 'Ella',
-    corridor: 'Ella Valley · A23 Corridor',
-    issue: 'road_closed',
-    status: currentStatus,
-    headline: currentStatus === 'disrupted' 
-      ? 'Road closed at 14th Mile Post culvert' 
-      : currentStatus === 'caution'
-      ? 'Single lane traffic · 4x4 pickup shuttle operating'
-      : 'Access clear · Wellawaya-Ella route fully passable',
-    description: currentStatus === 'disrupted'
-      ? 'Culvert repair at 14th Mile Post due to heavy runoff. Light 4x4 pickup shuttle active from rail station.'
-      : 'Road passage inspected and safe for arriving guests.',
-    bypassAdvice: '4x4 pickup shuttle active from Bandarawela rail depot for verified guests.',
-    utilities: {
-      generatorStatus: generatorState,
-      waterStatus: waterState,
-      connectivityStatus: connectivityState,
-    },
-    contactNumber: '077 412 8901',
-    verifiedBy: 'Estate Dispatch',
-    verifiedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  // Strict match only — mirrors the backend ownership check. A notice with
+  // no createdBy (legacy/seed data) has no identifiable owner, so it won't
+  // show up on any owner's desk.
+  const canManage = (notice) => Boolean(notice.createdBy) && String(notice.createdBy) === String(user?.id);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchNotices({ sort: 'newest' });
+      setNotices((res?.notices || []).filter(canManage));
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Failed to load notices');
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const showFlash = (msg) => {
+    setFlash(msg);
+    setTimeout(() => setFlash(null), 3000);
   };
 
-  const handleQuickStatusChange = (newStatus) => {
-    setCurrentStatus(newStatus);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  const handleQuickStatus = async (notice, status) => {
+    if (notice.status === status) return;
+    setBusyId(notice.id);
+    setNotices((prev) => prev.map((n) => (n.id === notice.id ? { ...n, status } : n)));
+    try {
+      await updateNotice(notice.id, { status });
+      showFlash(`"${notice.title}" set to ${status.toUpperCase()}.`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error?.message || err.response?.data?.error || 'Status update failed');
+      load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDelete = async (notice) => {
+    if (!confirm(`Remove "${notice.title}" from the Corridor Ledger? This cannot be undone.`)) return;
+    setBusyId(notice.id);
+    setNotices((prev) => prev.filter((n) => n.id !== notice.id));
+    try {
+      await deleteNotice(notice.id);
+      showFlash(`"${notice.title}" removed from the ledger.`);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || err.response?.data?.error || 'Delete failed');
+      load();
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
     <div className="page-wrapper">
-      {/* Top Header */}
       <section className="ledger-hero" style={{ paddingBottom: '20px' }}>
         <div className="hero-text-block">
           <div className="hero-tracker">
@@ -54,213 +87,134 @@ export default function OwnerDeskPage() {
           </div>
           <h1 className="hero-title">Host Operations Desk</h1>
           <p className="hero-description">
-            Manage your property's real-time corridor signal, update generator hours, and broadcast direct bypass instructions to incoming guests and transfer vans.
+            Publish, edit, retire, and switch the live status of every operational notice you have broadcast to the Corridor Ledger.
           </p>
         </div>
-
-        {/* Host Verified SIM Badge */}
-        <div className="metrics-summary-card" style={{ minWidth: '300px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="status-dot" />
-            <strong style={{ fontSize: '13px', color: 'var(--brand-forest)' }}>077 412 8901</strong>
-            <span style={{ fontSize: '11px', backgroundColor: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
-              VERIFIED SIM
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            Property: <strong>Zion View (Ella)</strong> · Desk #4402
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Last broadcast synchronized 4 min ago
-          </div>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <Link to="/post" className="btn-report-disruption">✍️ Post New Notice</Link>
+          <Link to="/notices" className="btn-emergency">📋 Public Ledger Feed</Link>
         </div>
       </section>
 
-      {savedSuccess && (
-        <div style={{ backgroundColor: '#DCFCE7', border: '1px solid #BBF7D0', color: '#166534', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '13.5px', fontWeight: 600 }}>
-          ✓ Signal broadcast updated! Synchronized across highland mesh nodes.
+      {flash && (
+        <div style={{ backgroundColor: '#DCFCE7', border: '1px solid #BBF7D0', color: '#166534', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13.5px', fontWeight: 600 }}>
+          ✓ {flash}
+        </div>
+      )}
+      {error && (
+        <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13.5px' }}>
+          ⚠️ {error}
         </div>
       )}
 
-      {/* Main Grid: Left Controls, Right Active Card Preview */}
-      <div className="post-notice-layout">
-        <div className="post-form-card">
-          {/* Quick Status Tier Buttons */}
-          <div style={{ marginBottom: '28px' }}>
-            <h3 className="form-section-title">
-              <span>🚦</span>
-              <span>1-Click Live Status Switcher</span>
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-              Instantly toggle your public corridor status. Incoming guests will see this immediately on the live ledger.
-            </p>
+      <div className="post-form-card">
+        <h3 className="form-section-title" style={{ marginBottom: '4px' }}>
+          <span>📡</span>
+          <span>Your Broadcast Notices ({notices.length})</span>
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          Switch status inline, open the full editor, or retire a notice once the corridor is clear.
+        </p>
 
-            <div className="status-radios-grid">
-              <div
-                className={`status-radio-card ${currentStatus === 'open' ? 'selected open' : ''}`}
-                onClick={() => handleQuickStatusChange('open')}
-              >
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Open &amp; Clear</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Normal Passage</div>
-                </div>
-              </div>
-
-              <div
-                className={`status-radio-card ${currentStatus === 'caution' ? 'selected caution' : ''}`}
-                onClick={() => handleQuickStatusChange('caution')}
-              >
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#D97706' }} />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Caution</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Mist / Restricted</div>
-                </div>
-              </div>
-
-              <div
-                className={`status-radio-card ${currentStatus === 'disrupted' ? 'selected disrupted' : ''}`}
-                onClick={() => handleQuickStatusChange('disrupted')}
-              >
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#D93829' }} />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Disrupted</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Culvert / Slip</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Utility Toggles */}
-          <div style={{ marginBottom: '28px' }}>
-            <h3 className="form-section-title">
-              <span>⚡</span>
-              <span>Quick Utility Schedules</span>
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label className="form-label" style={{ fontSize: '12.5px' }}>Generator Availability Window</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    '6:00 PM - 10:00 PM Active',
-                    '24/7 Solar Grid Stable',
-                    'Standby Backup Only',
-                  ].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      className={`filter-pill ${generatorState === val ? 'active' : ''}`}
-                      onClick={() => {
-                        setGeneratorState(val);
-                        setSavedSuccess(true);
-                        setTimeout(() => setSavedSuccess(false), 2500);
-                      }}
-                      style={{ fontSize: '12px' }}
-                    >
-                      {val}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label" style={{ fontSize: '12.5px' }}>Drinking &amp; Storage Water Status</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    'Gravity Feed 3000L Reserve',
-                    'Normal Municipal Flow',
-                    'Backup Bowser En Route',
-                  ].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      className={`filter-pill ${waterState === val ? 'active' : ''}`}
-                      onClick={() => {
-                        setWaterState(val);
-                        setSavedSuccess(true);
-                        setTimeout(() => setSavedSuccess(false), 2500);
-                      }}
-                      style={{ fontSize: '12px' }}
-                    >
-                      {val}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label" style={{ fontSize: '12.5px' }}>Connectivity Relay</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    'Dialog 4G + Starlink Relay Active',
-                    'SLT Fibre Operational',
-                    '2G GSM Only',
-                  ].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      className={`filter-pill ${connectivityState === val ? 'active' : ''}`}
-                      onClick={() => {
-                        setConnectivityState(val);
-                        setSavedSuccess(true);
-                        setTimeout(() => setSavedSuccess(false), 2500);
-                      }}
-                      style={{ fontSize: '12px' }}
-                    >
-                      {val}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Links */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-            <Link to="/post" className="btn-report-disruption">
-              ✍️ Post New Detailed Notice
-            </Link>
-            <Link to="/notices" className="btn-emergency">
-              📋 View Public Ledger Feed
+        {loading ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading notices…</p>
+        ) : notices.length === 0 ? (
+          <div className="empty-state-card" style={{ padding: '28px' }}>
+            <h2 className="empty-state-title" style={{ fontSize: '20px' }}>No notices published yet</h2>
+            <p className="empty-state-description">Post your first operational notice to appear on the public ledger.</p>
+            <Link to="/post" className="btn-publish-submit" style={{ width: 'auto', padding: '10px 20px' }}>
+              ✍️ Post New Notice
             </Link>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {notices.map((notice) => {
+              const cfg = getStatusConfig?.(notice.status) || {};
+              return (
+                <div
+                  key={notice.id}
+                  style={{
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '10px',
+                    padding: '14px 16px',
+                    opacity: busyId === notice.id ? 0.6 : 1,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--brand-forest)' }}>
+                        {notice.title}
+                        <span
+                          style={{
+                            marginLeft: '8px',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            backgroundColor: '#F4EFE6',
+                            color: cfg.dotColor || '#333',
+                          }}
+                        >
+                          {cfg.label || notice.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {notice.townName} · {notice.corridor}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {notice.headline} · updated {formatTimeAgo?.(notice.updatedAt || notice.verifiedAt) || ''}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <Link
+                        to={`/notices/${encodeURIComponent(notice.id)}/edit`}
+                        className="filter-pill"
+                        style={{ fontSize: '12px', textDecoration: 'none' }}
+                      >
+                        ✏️ Edit
+                      </Link>
+                      <button
+                        type="button"
+                        className="filter-pill"
+                        style={{ fontSize: '12px', color: '#991B1B', borderColor: '#FECACA' }}
+                        onClick={() => handleDelete(notice)}
+                        disabled={busyId === notice.id}
+                      >
+                        🗑️ Retire
+                      </button>
+                    </div>
+                  </div>
 
-        {/* Right Preview Box */}
-        <div className="preview-sticky-box">
-          <div className="preview-box-header">
-            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              Active Public Broadcast
-            </span>
-            <span style={{ backgroundColor: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: 700 }}>
-              LIVE
-            </span>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
+                    {QUICK_STATUSES.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`filter-pill ${notice.status === s.id ? 'active' : ''}`}
+                        style={{ fontSize: '11.5px' }}
+                        onClick={() => handleQuickStatus(notice, s.id)}
+                        disabled={busyId === notice.id}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: s.color,
+                            marginRight: '6px',
+                          }}
+                        />
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          <NoticeCard notice={mockOwnerNotice} />
-
-          {/* Host Telemetry Metrics */}
-          <div className="post-form-card" style={{ padding: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '10px' }}>
-              Today's Field Impact
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
-              <div style={{ backgroundColor: '#FAF8F2', padding: '10px', borderRadius: '6px' }}>
-                <strong style={{ fontSize: '18px', color: 'var(--brand-forest)' }}>142</strong>
-                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Ledger Views</div>
-              </div>
-              <div style={{ backgroundColor: '#FAF8F2', padding: '10px', borderRadius: '6px' }}>
-                <strong style={{ fontSize: '18px', color: '#166534' }}>3</strong>
-                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Vans Rerouted</div>
-              </div>
-              <div style={{ backgroundColor: '#FAF8F2', padding: '10px', borderRadius: '6px' }}>
-                <strong style={{ fontSize: '18px', color: 'var(--brand-forest)' }}>0</strong>
-                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Cancellations</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,22 +1,15 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function UnauthorizedPage() {
+export const UnauthorizedPage = () => {
   return (
     <div className="narrow-page">
-      <span className="badge">● Restricted area</span>
-      <h1>This area is for guest-house owners.</h1>
-      <p>
-        Your account is a traveller account. Owner desks can post and resolve corridor notices — travellers can browse
-        every notice without signing in.
-      </p>
+      <h1>Restricted Area</h1>
+      <p>This workspace is restricted to registered stay owners and desk operators.</p>
       <div className="narrow-page__actions">
-        <Link className="btn btn-primary" to="/notices">
-          Browse notices
-        </Link>
-        <Link className="btn btn-ghost" to="/signup/owner">
-          Register a stay
-        </Link>
+        <Link to="/notices" className="btn btn-primary">Browse Notices</Link>
+        <Link to="/login" className="btn btn-secondary">Desk Login</Link>
       </div>
     </div>
   );
-}
+};

@@ -5,46 +5,37 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/impact/stats:
+ * /impact/stats:
  *   get:
- *     summary: Get impact stats
- *     description: Aggregates active notices to count unique stays reporting, towns affected, guests warned, and notices resolved today.
+ *     tags: [Impact]
+ *     summary: Aggregate impact statistics across all active notices
  *     responses:
  *       200:
- *         description: A successful response with stats.
+ *         description: Stats
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ImpactStats' }
  */
 router.get('/stats', getStats);
 
 /**
  * @swagger
- * /api/impact/stories:
+ * /impact/stories:
  *   get:
- *     summary: Get impact stories
- *     description: Returns the seeded user stories.
+ *     tags: [Impact]
+ *     summary: List impact stories
  *     responses:
- *       200:
- *         description: A successful response with stories.
+ *       200: { description: Stories }
  *   post:
- *     summary: Create a new impact story
- *     description: Create a new impact story
+ *     tags: [Impact]
+ *     summary: Create an impact story
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               headline:
- *                 type: string
- *               content:
- *                 type: string
- *               author:
- *                 type: string
+ *           schema: { type: object }
  *     responses:
- *       201:
- *         description: A successful response with the created story.
+ *       201: { description: Created }
  */
 router.route('/stories')
   .get(getStories)
@@ -52,46 +43,34 @@ router.route('/stories')
 
 /**
  * @swagger
- * /api/impact/stories/{id}:
+ * /impact/stories/{id}:
  *   put:
+ *     tags: [Impact]
  *     summary: Update an impact story
- *     description: Update an impact story by ID
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               headline:
- *                 type: string
- *               content:
- *                 type: string
- *               author:
- *                 type: string
+ *           schema: { type: object }
  *     responses:
- *       200:
- *         description: A successful response with the updated story.
+ *       200: { description: Updated }
+ *       404: { $ref: '#/components/responses/NotFound' }
  *   delete:
+ *     tags: [Impact]
  *     summary: Delete an impact story
- *     description: Delete an impact story by ID
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
- *       200:
- *         description: Story deleted successfully.
+ *       200: { description: Deleted }
+ *       404: { $ref: '#/components/responses/NotFound' }
  */
 router.route('/stories/:id')
   .put(updateStory)
@@ -99,36 +78,22 @@ router.route('/stories/:id')
 
 /**
  * @swagger
- * /api/impact/problem:
+ * /impact/problem:
  *   get:
- *     summary: Get the impact problem statement
- *     description: Returns the static text about the problem statement.
+ *     tags: [Impact]
+ *     summary: Get "the problem" statement content
  *     responses:
- *       200:
- *         description: A successful response with the problem statement.
+ *       200: { description: Problem statement }
  *   put:
- *     summary: Update the impact problem statement
- *     description: Updates the impact problem statement.
+ *     tags: [Impact]
+ *     summary: Update "the problem" statement content
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               context:
- *                 type: string
- *               description:
- *                 type: string
- *               solution:
- *                 type: string
- *               details:
- *                 type: string
+ *           schema: { type: object }
  *     responses:
- *       200:
- *         description: A successful response with the updated problem statement.
+ *       200: { description: Updated }
  */
 router.route('/problem')
   .get(getProblem)

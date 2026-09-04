@@ -3,8 +3,9 @@
 import axios from 'axios';
 
 const client = axios.create({
-  // Empty in dev → same-origin /api/... via the Vite proxy. A real origin in prod.
-  baseURL: import.meta.env.VITE_API_URL || '',
+  // `/api` in dev (Vite proxy → :5000). A full URL ending in `/api` in prod.
+  // All api modules pass paths relative to this: `/notices`, `/auth/login`, …
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true, // send the refresh cookie
 });
 
@@ -54,5 +55,7 @@ client.interceptors.response.use(
 export const get = (url, config = {}) => client.get(url, config).then((res) => res.data);
 export const post = (url, data, config = {}) => client.post(url, data, config).then((res) => res.data);
 export const patch = (url, data, config = {}) => client.patch(url, data, config).then((res) => res.data);
+export const put = (url, data, config = {}) => client.put(url, data, config).then((res) => res.data);
+export const del = (url, config = {}) => client.delete(url, config).then((res) => res.data);
 
 export default client;

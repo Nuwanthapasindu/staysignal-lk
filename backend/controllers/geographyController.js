@@ -1,8 +1,9 @@
-import { Town, Corridor, Property, ImpactSnapshot } from '../models/index.js';
+import { Corridor, Property, ImpactSnapshot } from '../models/index.js';
+import { getAllTowns, getTownBySlug as findTownBySlug } from '../services/noticeStore.js';
 
 export const getTowns = async (req, res) => {
   try {
-    const towns = await Town.find().sort({ name: 1 });
+    const towns = await getAllTowns();
     res.status(200).json({ success: true, count: towns.length, data: towns });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -11,22 +12,11 @@ export const getTowns = async (req, res) => {
 
 export const getTownBySlug = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const town = await Town.findOne({ slug });
-
+    const town = await findTownBySlug(req.params.slug);
     if (!town) {
       return res.status(404).json({ success: false, message: 'Town not found' });
     }
-
-    const properties = await Property.find({ town_id: town._id });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        town,
-        properties
-      }
-    });
+    res.status(200).json({ success: true, data: { town, properties: [] } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

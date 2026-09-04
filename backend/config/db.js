@@ -31,18 +31,16 @@ export async function connectMongoose(uri = env.MONGO_URI) {
 
 async function connectDB() {
   try {
-    const conn = await mongoose.connect(env.MONGO_URI, { serverSelectionTimeoutMS: 3000 });
-    console.log(`[MongoDB Connected] Host: ${conn.connection.host}, DB: ${conn.connection.name}`);
-    return conn;
+    const host = await connectMongoose(env.MONGO_URI);
+    console.log(`[MongoDB Connected] Host: ${host}`);
   } catch (error) {
-    console.warn(`[MongoDB Primary Connection Failed]: ${error.message}. Connecting to local MongoDB at mongodb://127.0.0.1:27017/staysignal...`);
+    console.warn(`[MongoDB Primary Connection Failed]: ${error.message}. Trying local mongodb://127.0.0.1:27017/staysignal ...`);
     try {
-      const localConn = await mongoose.connect('mongodb://127.0.0.1:27017/staysignal', { serverSelectionTimeoutMS: 3000 });
-      console.log(`[MongoDB Connected to Local Fallback] Host: ${localConn.connection.host}, DB: ${localConn.connection.name}`);
-      return localConn;
+      const conn = await mongoose.connect('mongodb://127.0.0.1:27017/staysignal', { serverSelectionTimeoutMS: 3000 });
+      console.log(`[MongoDB Connected to Local Fallback] Host: ${conn.connection.host}`);
     } catch (localErr) {
-      console.error('[MongoDB Fallback Connection Error]:', localErr.message);
-      throw localErr;
+      console.error('[MongoDB Connection Error]:', localErr.message);
+      process.exit(1);
     }
   }
 }

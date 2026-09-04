@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchNoticeById, fetchNoticeAlternatives } from '../api/noticesApi';
+import { fetchNoticeById, fetchNoticeAlternatives, deleteNotice } from '../api/noticesApi';
+import { useAuth } from '../../auth';
 import { getStatusConfig, getIssueIcon, formatTimeAgo } from '../components/NoticeCard';
 import AlternativesList from '../components/AlternativesList';
 import CallStayModal from '../components/CallStayModal';
@@ -14,6 +15,26 @@ export default function NoticeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCallNotice, setSelectedCallNotice] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
+
+  const handleDelete = async () => {
+    if (!confirm('Remove this notice from the Corridor Ledger? This cannot be undone.')) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteNotice(id);
+      navigate('/notices');
+    } catch (err) {
+      setDeleteError(
+        err.response?.data?.error?.message || err.response?.data?.error || err.message || 'Failed to delete notice.'
+      );
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -111,15 +132,46 @@ export default function NoticeDetailPage() {
   const statusConfig = getStatusConfig(status);
   const issueIcon = getIssueIcon(issue);
   const timeAgo = formatTimeAgo(verifiedAt || updatedAt);
+  // Strict match only — mirrors the backend ownership check. A notice with
+  // no createdBy (legacy/seed data) has no identifiable owner, so nobody
+  // sees the edit/delete actions for it.
+  const canManage = isOwner && Boolean(notice.createdBy) && String(notice.createdBy) === String(user?.id);
 
   return (
     <div className="detail-page-container">
       {/* Navigation Breadcrumb */}
-      <nav aria-label="Breadcrumb">
+      <nav aria-label="Breadcrumb" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Link to="/notices" className="back-link">
           ← Back to Corridor Ledger
         </Link>
+
+        {canManage && (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link
+              to={`/notices/${encodeURIComponent(id)}/edit`}
+              className="filter-pill"
+              style={{ fontSize: '12.5px', textDecoration: 'none' }}
+            >
+              ✏️ Edit Notice
+            </Link>
+            <button
+              type="button"
+              className="filter-pill"
+              style={{ fontSize: '12.5px', color: '#991B1B', borderColor: '#FECACA' }}
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? '🗑️ Removing…' : '🗑️ Delete Notice'}
+            </button>
+          </div>
+        )}
       </nav>
+
+      {deleteError && (
+        <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 14px', borderRadius: '8px', margin: '10px 0', fontSize: '13px' }}>
+          ⚠️ {deleteError}
+        </div>
+      )}
 
       {/* Main Notice Detail Card */}
       <article className={`detail-hero-card status-${status.toLowerCase()}`}>

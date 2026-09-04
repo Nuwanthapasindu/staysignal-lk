@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Landmark, 
   Trees, 
@@ -14,35 +14,54 @@ import {
   Search, 
   RotateCcw, 
   RefreshCw, 
-  Eye, 
-  EyeOff, 
-  Edit, 
-  Trash2, 
-  History, 
-  Radio, 
-  FileSpreadsheet, 
-  DollarSign, 
-  CheckSquare, 
-  ChevronLeft, 
+  Eye,
+  Edit,
+  Trash2,
+  FileSpreadsheet,
+  DollarSign,
+  CheckSquare,
+  ChevronLeft,
   ChevronRight,
-  Send,
   BookOpen
 } from 'lucide-react';
-import { tourismStats as defaultStats, tourismList as defaultList } from '../data/tourismData';
-import { 
-  fetchTourismDestinations, 
-  updateTourismDestinationStatus, 
-  deleteTourismDestination 
+import {
+  fetchTourismDestinations,
+  deleteTourismDestination,
+  resolveMediaUrl,
 } from '../api/tourismApi';
+import { useAuth } from '../../auth';
+
+const STATUS_META = {
+  open: { bg: '#e5f5ed', fg: '#166534', label: 'Open' },
+  caution: { bg: '#fef3c7', fg: '#92400e', label: 'Caution' },
+  danger: { bg: '#fee2e2', fg: '#991b1b', label: 'Suspended' },
+  draft: { bg: '#f1f5f9', fg: '#475569', label: 'Draft' },
+};
 
 export default function TourismDirectoryPage() {
-  const navigate = useNavigate();
+  const isAdmin = useLocation().pathname.startsWith('/admin');
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
+  // Strict match only — a record is editable only by the owner who created
+  // it (mirrors the backend check). Records with no createdBy (legacy/seed
+  // data) have no identifiable owner, so nobody sees the actions for them.
+  const canManage = (item) =>
+    isOwner && Boolean(item?.createdBy) && String(item.createdBy) === String(user?.id);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
-  const [destinations, setDestinations] = useState(defaultList);
-  const [stats, setStats] = useState(defaultStats);
+  const [destinations, setDestinations] = useState([]);
+  const [stats, setStats] = useState({
+    totalDestinations: 0,
+    totalDestinationsSub: '',
+    activeOpen: 0,
+    activeOpenSub: '',
+    weatherAdvisory: 0,
+    weatherAdvisorySub: '',
+    draftRevisions: 0,
+    draftRevisionsSub: '',
+  });
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -83,17 +102,25 @@ export default function TourismDirectoryPage() {
     }
   };
 
-  const filteredDestinations = destinations.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                          (item.nodeId && item.nodeId.toLowerCase().includes(search.toLowerCase())) ||
-                          (item.district && item.district.toLowerCase().includes(search.toLowerCase()));
+  const STATUS_LABEL_TO_VALUE = {
+    'Published / Open': 'open',
+    'Caution / Warning': 'caution',
+    Suspended: 'danger',
+    'Draft Review': 'draft',
+  };
+
+  const filteredDestinations = destinations.filter((item) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (item.name || '').toLowerCase().includes(q) ||
+      (item.nodeId || '').toLowerCase().includes(q) ||
+      (item.district || '').toLowerCase().includes(q);
     const matchesCat = selectedCategory === 'All Categories' || item.category === selectedCategory;
-    const matchesProv = selectedProvince === 'All Provinces' || (item.province && item.province.includes(selectedProvince));
-    const matchesStat = selectedStatus === 'All Statuses' || 
-                        (selectedStatus === 'Published / Open' && item.status === 'open') ||
-                        (selectedStatus === 'Caution / Warning' && item.status === 'caution') ||
-                        (selectedStatus === 'Suspended' && item.status === 'danger') ||
-                        (selectedStatus === 'Draft Review' && item.status === 'draft');
+    const matchesProv =
+      selectedProvince === 'All Provinces' || (item.province || '').includes(selectedProvince);
+    const wantStatus = STATUS_LABEL_TO_VALUE[selectedStatus] || selectedStatus.toLowerCase();
+    const matchesStat = selectedStatus === 'All Statuses' || item.status === wantStatus;
     return matchesSearch && matchesCat && matchesProv && matchesStat;
   });
 
@@ -113,67 +140,19 @@ export default function TourismDirectoryPage() {
     }
   };
 
-  const handleToggleHide = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
-    if (!item) return;
-    const isHidden = item.status === 'danger';
-    const newStatus = isHidden ? 'open' : 'danger';
-    const newStatusText = isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS';
-
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, status: newStatus, statusText: newStatusText };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, { status: newStatus, statusText: newStatusText });
-    }
-  };
-
-  const handleReinstate = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
-    if (!item) return;
-    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Reinstated by Harbour Master' };
-
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, ...updateData };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, updateData);
-    }
-  };
-
-  const handlePublishDraft = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
-    if (!item) return;
-    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Approved by Field Ranger' };
-
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, ...updateData };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, updateData);
-    }
-  };
+  // Backend accepts either a Mongo _id or the slug for :id routes.
+  const apiId = (item) => item?._id || item?.slug || item?.id;
 
   const handleDelete = async (id, name) => {
-    if (confirm(`Are you sure you want to remove ${name} from registry?`)) {
-      const item = destinations.find(d => (d._id || d.id) === id);
-      setDestinations(prev => prev.filter(d => (d._id || d.id) !== id));
-      if (item?._id) {
-        await deleteTourismDestination(item._id);
-      }
+    if (!confirm(`Are you sure you want to remove ${name} from registry?`)) return;
+    const item = destinations.find((d) => (d._id || d.id) === id);
+    setDestinations((prev) => prev.filter((d) => (d._id || d.id) !== id));
+    try {
+      await deleteTourismDestination(apiId(item));
+    } catch (err) {
+      console.warn('[Tourism] delete failed:', err.message);
     }
+    loadData();
   };
 
   const handleSyncFeeds = async () => {
@@ -197,31 +176,38 @@ export default function TourismDirectoryPage() {
       {/* Breadcrumb Bar */}
       <div className="breadcrumb-bar">
         <div className="breadcrumb-links">
-          <Link to="/" className="breadcrumb-link">Admin Portal</Link>
+          <Link to="/" className="breadcrumb-link">Home</Link>
           <span className="breadcrumb-sep">&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Tourism Directory Management</span>
-        </div>
-        <div className="badge-tag" style={{ color: '#166534', backgroundColor: '#e5f5ed' }}>
-          SLTDA Regional Gateway Active
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+            {isAdmin ? 'Tourism Directory Management' : 'Tourism Destinations'}
+          </span>
         </div>
       </div>
 
       {/* Editorial Header */}
       <div className="editorial-header">
         <div className="editorial-header-left">
-          <h1 className="editorial-title">Tourism Destinations & Heritage Registry</h1>
+          <h1 className="editorial-title">Tourism Destinations &amp; Heritage Registry</h1>
           <p className="editorial-subtitle">
-            Manage public visibility, foreign visitor admission tariffs, seasonal accessibility, and safety regulations across Sri Lanka's cultural, nature, and coastal attractions.
+            {isAdmin
+              ? "Manage public visibility, foreign visitor admission tariffs, seasonal accessibility, and safety regulations across Sri Lanka's cultural, nature, and coastal attractions."
+              : "Explore Sri Lanka's cultural, nature, and coastal destinations with current access status, admission tariffs, and visitor guidance."}
           </p>
         </div>
-        <div className="editorial-actions">
-          <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
-            <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync SLTDA Feeds'}
-          </button>
-          <Link to="/admin/tourism/new" className="btn btn-primary">
-            <Plus size={14} /> Add Tourism Place
-          </Link>
-        </div>
+        {(isAdmin || isOwner) && (
+          <div className="editorial-actions">
+            {isAdmin && (
+              <button className="btn btn-secondary" onClick={handleSyncFeeds} disabled={isSyncing}>
+                <RefreshCw size={14} className={isSyncing ? 'pulse' : ''} /> {isSyncing ? 'Syncing Feeds...' : 'Sync Feeds'}
+              </button>
+            )}
+            {isOwner && (
+              <Link to="/admin/tourism/new" className="btn btn-primary">
+                <Plus size={14} /> Add New Tourism
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 4 Stat Cards */}
@@ -335,7 +321,7 @@ export default function TourismDirectoryPage() {
         </div>
       </div>
 
-      {/* Registered Tourism Destinations Table Card */}
+      {isAdmin ? (
       <div className="data-table-card">
         <div className="table-header-bar">
           <div className="table-header-title">
@@ -389,6 +375,13 @@ export default function TourismDirectoryPage() {
 
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {(item.images?.[0]?.url || item.heroImage) && (
+                          <img
+                            src={resolveMediaUrl(item.images?.[0]?.url || item.heroImage)}
+                            alt=""
+                            style={{ width: '34px', height: '34px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border-subtle)' }}
+                          />
+                        )}
                         <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '13.5px' }}>
                           {item.name}
                         </span>
@@ -451,69 +444,35 @@ export default function TourismDirectoryPage() {
 
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        {item.status === 'draft' ? (
-                          <button 
-                            className="btn btn-primary btn-sm" 
-                            style={{ padding: '3px 8px', fontSize: '11px' }}
-                            onClick={() => handlePublishDraft(rowId)}
-                          >
-                            Review Draft
-                          </button>
-                        ) : item.status === 'danger' && (item.id === 'pigeon-island-06' || item.slug === 'pigeon-island') ? (
-                          <button 
-                            className="btn btn-secondary btn-sm" 
-                            style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
-                            onClick={() => handleReinstate(rowId)}
-                          >
-                            Reinstate
-                          </button>
-                        ) : (
-                          <Link 
-                            to={`/tourism/${item.slug}`} 
-                            className="btn-icon" 
-                            title="View Public Dossier"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <Eye size={14} />
-                          </Link>
-                        )}
-
-                        {item.status === 'danger' && (
-                          <button 
-                            className="btn-icon" 
-                            title="Audit History"
-                            onClick={() => alert('Viewing marine storm closure logs.')}
-                          >
-                            <History size={14} color="var(--text-secondary)" />
-                          </button>
-                        )}
-
-                        <Link 
-                          to="/admin/tourism/new" 
-                          className="btn-icon" 
-                          title="Edit Entry"
+                        <Link
+                          to={`/tourism/${item.slug}`}
+                          className="btn-icon"
+                          title="View Public Dossier"
                           style={{ color: 'var(--text-secondary)' }}
                         >
-                          <Edit size={14} />
+                          <Eye size={14} />
                         </Link>
 
-                        {item.status !== 'draft' && item.status !== 'danger' && (
-                          <button 
-                            className="btn-icon" 
-                            title="Toggle Visibility"
-                            onClick={() => handleToggleHide(rowId)}
-                          >
-                            <EyeOff size={14} color="var(--text-secondary)" />
-                          </button>
-                        )}
+                        {canManage(item) && (
+                          <>
+                            <Link
+                              to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
+                              className="btn-icon"
+                              title="Edit Entry"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              <Edit size={14} />
+                            </Link>
 
-                        <button 
-                          className="btn-icon" 
-                          title="Delete Destination"
-                          onClick={() => handleDelete(rowId, item.name)}
-                        >
-                          <Trash2 size={14} color="var(--text-tertiary)" />
-                        </button>
+                            <button
+                              className="btn-icon"
+                              title="Delete Destination"
+                              onClick={() => handleDelete(rowId, item.name)}
+                            >
+                              <Trash2 size={14} color="var(--text-tertiary)" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -570,37 +529,98 @@ export default function TourismDirectoryPage() {
           </div>
         </div>
       </div>
+      ) : (
+        <div className="tourism-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px', marginTop: '4px' }}>
+          {filteredDestinations.length === 0 && (
+            <div className="content-card" style={{ gridColumn: '1 / -1' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No destinations match your filters.</p>
+            </div>
+          )}
+          {filteredDestinations.map((item) => {
+            const meta = STATUS_META[item.status] || STATUS_META.open;
+            const img = item.images?.[0]?.url || item.heroImage;
+            const rowId = item._id || item.id;
+            return (
+              <div
+                key={rowId || item.slug}
+                className="content-card"
+                style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+              >
+                <Link
+                  to={`/tourism/${item.slug}`}
+                  style={{ display: 'flex', flexDirection: 'column', flex: 1, textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div style={{ position: 'relative', height: '150px', backgroundColor: 'var(--bg-surface-subtle)' }}>
+                    {img ? (
+                      <img
+                        src={resolveMediaUrl(img)}
+                        alt={item.name}
+                        loading="lazy"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)' }}>
+                        {getCategoryIcon(item.category)}
+                      </div>
+                    )}
+                    <span
+                      className="badge-tag"
+                      style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: meta.bg, color: meta.fg, fontSize: '10.5px', fontWeight: 700 }}
+                    >
+                      {meta.label}
+                    </span>
+                  </div>
+                  <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                      {getCategoryIcon(item.category)}
+                      <span>{item.category}</span>
+                    </div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-green-deep)', lineHeight: 1.3, margin: '2px 0' }}>
+                      {item.name}
+                    </h3>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {[item.district, item.province].filter(Boolean).join(', ')}
+                    </div>
+                    {item.foreignTariff && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, marginTop: 'auto', paddingTop: '8px' }}>
+                        {item.foreignTariff}
+                      </div>
+                    )}
+                  </div>
+                </Link>
 
-      {/* Direct Central Secretariat Dispatch Relay Banner */}
-      <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', padding: '16px 20px', marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-md)', backgroundColor: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bbf7d0', flexShrink: 0 }}>
-            <Radio size={20} color="var(--brand-green-deep)" />
-          </div>
-          <div>
-            <h4 style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>
-              Direct Central Secretariat Dispatch Relay
-            </h4>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '650px' }}>
-              Changes saved here reflect instantaneously across regional hotel lobby displays in Kandy, Ella, Galle, and Colombo Fort Tourist Information Desks.
-            </p>
-          </div>
+                {canManage(item) && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      borderTop: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-surface-subtle)',
+                    }}
+                  >
+                    <Link
+                      to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '11.5px' }}
+                    >
+                      <Edit size={12} /> Edit
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '11.5px', color: '#991B1B' }}
+                      onClick={() => handleDelete(rowId, item.name)}
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--brand-green-deep)', fontWeight: 600 }}>
-            <span className="ticker-dot pulse"></span>
-            Mesh 3G Relay: Active
-          </span>
-          <button 
-            className="btn btn-primary btn-sm" 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--brand-green-deep)' }}
-            onClick={() => alert('Emergency bulletin dispatch broadcasted to 28 hotel kiosks!')}
-          >
-            <Send size={12} /> Push Emergency Bulletin
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

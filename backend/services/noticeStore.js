@@ -27,6 +27,14 @@ export const getAllTowns = async () => {
   return memoryTowns;
 };
 
+export const getTownBySlug = async (slug) => {
+  const target = String(slug || '').toLowerCase().trim();
+  const towns = await getAllTowns();
+  return towns.find(
+    (t) => (t.slug || '').toLowerCase() === target || (t.id || '').toLowerCase() === target
+  );
+};
+
 export const getNotices = async (filters = {}) => {
   const {
     town,
@@ -260,6 +268,67 @@ export const getTickerData = async () => {
       lastVerified: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
     },
   };
+};
+
+const buildIdQuery = (cleanId) =>
+  cleanId.match(/^[0-9a-fA-F]{24}$/)
+    ? { $or: [{ _id: cleanId }, { customId: cleanId }] }
+    : { customId: cleanId };
+
+const matchMemory = (n, cleanId) =>
+  n.customId === cleanId || n.id === cleanId || (n._id && n._id.toString() === cleanId);
+
+export const updateNotice = async (id, patch) => {
+  const cleanId = String(id).trim();
+  const cleanPatch = { ...patch };
+  delete cleanPatch._id;
+  delete cleanPatch.id;
+  delete cleanPatch.customId;
+  delete cleanPatch.createdBy;
+
+  if (getIsMongoConnected()) {
+    try {
+      const updated = await Notice.findOneAndUpdate(
+        buildIdQuery(cleanId),
+        { ...cleanPatch, updatedAt: new Date() },
+        { new: true, runValidators: true }
+      );
+      if (updated) return updated.toJSON();
+    } catch (e) {
+      console.warn('Mongo notice update error, trying memory fallback', e.message);
+    }
+  }
+
+  const idx = memoryNotices.findIndex((n) => matchMemory(n, cleanId));
+  if (idx === -1) return null;
+  memoryNotices[idx] = {
+    ...memoryNotices[idx],
+    ...cleanPatch,
+    updatedAt: new Date().toISOString(),
+  };
+  const row = memoryNotices[idx];
+  return { ...row, id: row.customId || row.id };
+};
+
+export const deleteNotice = async (id) => {
+  const cleanId = String(id).trim();
+  let deleted = false;
+
+  if (getIsMongoConnected()) {
+    try {
+      const res = await Notice.findOneAndDelete(buildIdQuery(cleanId));
+      if (res) deleted = true;
+    } catch (e) {
+      console.warn('Mongo notice delete error, trying memory fallback', e.message);
+    }
+  }
+
+  const idx = memoryNotices.findIndex((n) => matchMemory(n, cleanId));
+  if (idx !== -1) {
+    memoryNotices.splice(idx, 1);
+    deleted = true;
+  }
+  return deleted;
 };
 
 export const addNotice = async (noticeData) => {

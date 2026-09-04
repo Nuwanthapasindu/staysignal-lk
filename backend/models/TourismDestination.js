@@ -11,6 +11,16 @@ const galleryItemSchema = new mongoose.Schema({
   image: { type: String, required: true }
 }, { _id: false });
 
+// Uploaded site photography (multer local-fs adapter). `path` is the
+// storage-relative path used to delete the file; `url` is browser-facing.
+const uploadedImageSchema = new mongoose.Schema({
+  url: { type: String, required: true },
+  path: { type: String, required: true },
+  originalName: { type: String, default: '' },
+  size: { type: Number, default: 0 },
+  uploadedAt: { type: Date, default: Date.now }
+}, { _id: true });
+
 const siteRuleItemSchema = new mongoose.Schema({
   label: { type: String, required: true },
   desc: { type: String, required: true }
@@ -46,6 +56,9 @@ const hotlineSchema = new mongoose.Schema({
 }, { _id: false });
 
 const tourismDestinationSchema = new mongoose.Schema({
+  // Owner account that registered this destination. Absent on legacy/seed
+  // records. Used to scope edit/delete to the creator.
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
   nodeId: { type: String, required: true, trim: true }, // e.g. UNESCO-LK-0014
@@ -82,7 +95,8 @@ const tourismDestinationSchema = new mongoose.Schema({
   guideRequirement: { type: String, default: 'SLTDA Certified Guide Optional' },
   smsSummary: { type: String, maxLength: 140, default: '' },
   overview: { type: String, default: '' },
-  heroImage: { type: String, default: 'https://images.unsplash.com/photo-1588598198321-9735fd52455b?auto=format&fit=crop&w=1600&q=80' },
+  heroImage: { type: String, default: '' },
+  images: { type: [uploadedImageSchema], default: [] },
   ecoRestricted: { type: Boolean, default: false },
   verifiedAgo: { type: String, default: 'Just now' },
   verifiedDesk: { type: String, default: 'SLTDA Field Desk' },

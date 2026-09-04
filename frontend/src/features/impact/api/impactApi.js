@@ -1,33 +1,5 @@
-import axios from 'axios';
+import { get } from '../../../shared/api/client';
 
-const API_BASE_URL = 'http://localhost:5000/api/impact';
-
-export const fetchImpactStats = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/stats`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching impact stats:', error);
-    throw error;
-  }
-};
-
-export const fetchImpactStories = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/stories`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching impact stories:', error);
-    throw error;
-  }
-};
-
-export const fetchImpactProblem = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/problem`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching impact problem:', error);
-    throw error;
-  }
-};
+export const fetchImpactStats = () => get('/impact/stats');
+export const fetchImpactStories = () => get('/impact/stories');
+export const fetchImpactProblem = () => get('/impact/problem');
