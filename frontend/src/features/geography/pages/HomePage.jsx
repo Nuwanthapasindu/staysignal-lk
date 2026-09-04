@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { NoticeCard } from '../../notices';
 import { fetchNotices } from '../../notices/api/noticesApi';
+import { ImpactCounters, ImpactStories, ImpactProblemContext } from '../../impact';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ export default function HomePage() {
             <span>4 towns affected</span>
             <span>•</span>
             <span>86 guests warned today</span>
+            <ImpactCounters />
           </div>
         </div>
 
@@ -141,6 +143,8 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        <ImpactProblemContext />
+        <ImpactStories />
       </section>
 
       {/* Section: Live right now */}

@@ -13,6 +13,10 @@ import PlacePermit from './PlacePermit.js';
 import PlaceContact from './PlaceContact.js';
 import User from './User.js';
 import RefreshToken from './RefreshToken.js';
+// import AiRewrite from './AiRewrite.js';
+import ImpactSnapshot from './ImpactSnapshot.js';
+import ImpactStory from './ImpactStory.js';
+import ImpactProblem from './ImpactProblem.js';
 import * as Enums from './enums.js';
 
 export {
@@ -31,5 +35,9 @@ export {
   PlaceContact,
   User,
   RefreshToken,
+  // AiRewrite,
+  ImpactSnapshot,
+  ImpactStory,
+  ImpactProblem,
   Enums
 };
