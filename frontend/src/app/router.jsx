@@ -1,10 +1,11 @@
-// M2 notices + shared chrome
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../shared/components/Layout';
 import { HomePage, ProblemPage, HowItWorksPage, TownPage } from '../features/geography';
 import { NoticesPage, NoticeDetailPage } from '../features/notices';
 import { OwnerDeskPage, PostNoticePage, EditNoticePage } from '../features/owner';
 import { ImpactPage, NotFoundPage } from '../features/impact';
+import { TourismDirectoryPage, AddTourismPlacePage, TourismDetailPage } from '../features/tourism';
+import { CampingDirectoryPage, AddCampingPage, CampingDetailPage } from '../features/camping';
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,21 @@ export const router = createBrowserRouter([
       { path: 'post', element: <PostNoticePage /> },
       { path: 'notices/:id/edit', element: <EditNoticePage /> },
       { path: 'impact', element: <ImpactPage /> },
+
+      // Tourism Routes
+      { path: 'tourism', element: <TourismDirectoryPage /> },
+      { path: 'tourism/new', element: <AddTourismPlacePage /> },
+      { path: 'tourism/:id', element: <TourismDetailPage /> },
+      { path: 'admin/tourism', element: <TourismDirectoryPage /> },
+      { path: 'admin/tourism/new', element: <AddTourismPlacePage /> },
+
+      // Camping Routes
+      { path: 'camping', element: <CampingDirectoryPage /> },
+      { path: 'camping/new', element: <AddCampingPage /> },
+      { path: 'camping/:id', element: <CampingDetailPage /> },
+      { path: 'admin/camping', element: <CampingDirectoryPage /> },
+      { path: 'admin/camping/new', element: <AddCampingPage /> },
+
       { path: '*', element: <NotFoundPage /> }
     ]
   }
