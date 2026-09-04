@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { fetchTourismDestination } from '../api/tourismApi';
 import { 
   Landmark, 
   ShieldCheck, 
@@ -23,9 +24,44 @@ import {
 } from 'lucide-react';
 import { sigiriyaDetail } from '../data/tourismData';
 
+const EMPTY = {
+  specs: [],
+  dossier: { title: '', badge: '', ref: '', paragraphs: [], highlights: [], gallery: [] },
+  siteRules: [],
+  corridorRadar: [],
+  campAndStay: [],
+  hotlines: [],
+};
+
 export default function TourismDetailPage() {
   const { id } = useParams();
-  const place = sigiriyaDetail;
+  const [fetched, setFetched] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchTourismDestination(id)
+      .then((d) => !cancelled && setFetched(d || null))
+      .catch(() => !cancelled && setFetched(null))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Merge the fetched record over a template so every section has data to render.
+  const base = fetched || sigiriyaDetail;
+  const place = {
+    ...EMPTY,
+    ...sigiriyaDetail,
+    ...base,
+    dossier: { ...EMPTY.dossier, ...(sigiriyaDetail.dossier || {}), ...(base.dossier || {}) },
+  };
+
+  if (loading) {
+    return <div className="page-container" style={{ padding: '48px 16px' }}>Loading destination…</div>;
+  }
 
   return (
     <div className="page-container" style={{ paddingTop: '16px' }}>
@@ -36,10 +72,10 @@ export default function TourismDetailPage() {
           <span className="breadcrumb-sep">&gt;</span>
           <Link to="/admin/tourism" className="breadcrumb-link">Central Cultural Triangle</Link>
           <span className="breadcrumb-sep">&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Sigiriya Rock Fortress & Water Gardens</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{place.name}</span>
         </div>
         <div className="badge-tag" style={{ color: '#166534', backgroundColor: '#e5f5ed', fontFamily: 'var(--font-mono)' }}>
-          CITADEL NODE: #184
+          {place.nodeId ? `NODE: ${place.nodeId}` : 'NODE'}
         </div>
       </div>
 

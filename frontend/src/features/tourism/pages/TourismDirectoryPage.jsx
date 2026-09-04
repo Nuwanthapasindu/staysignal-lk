@@ -83,17 +83,25 @@ export default function TourismDirectoryPage() {
     }
   };
 
-  const filteredDestinations = destinations.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                          (item.nodeId && item.nodeId.toLowerCase().includes(search.toLowerCase())) ||
-                          (item.district && item.district.toLowerCase().includes(search.toLowerCase()));
+  const STATUS_LABEL_TO_VALUE = {
+    'Published / Open': 'open',
+    'Caution / Warning': 'caution',
+    Suspended: 'danger',
+    'Draft Review': 'draft',
+  };
+
+  const filteredDestinations = destinations.filter((item) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (item.name || '').toLowerCase().includes(q) ||
+      (item.nodeId || '').toLowerCase().includes(q) ||
+      (item.district || '').toLowerCase().includes(q);
     const matchesCat = selectedCategory === 'All Categories' || item.category === selectedCategory;
-    const matchesProv = selectedProvince === 'All Provinces' || (item.province && item.province.includes(selectedProvince));
-    const matchesStat = selectedStatus === 'All Statuses' || 
-                        (selectedStatus === 'Published / Open' && item.status === 'open') ||
-                        (selectedStatus === 'Caution / Warning' && item.status === 'caution') ||
-                        (selectedStatus === 'Suspended' && item.status === 'danger') ||
-                        (selectedStatus === 'Draft Review' && item.status === 'draft');
+    const matchesProv =
+      selectedProvince === 'All Provinces' || (item.province || '').includes(selectedProvince);
+    const wantStatus = STATUS_LABEL_TO_VALUE[selectedStatus] || selectedStatus.toLowerCase();
+    const matchesStat = selectedStatus === 'All Statuses' || item.status === wantStatus;
     return matchesSearch && matchesCat && matchesProv && matchesStat;
   });
 
@@ -113,67 +121,50 @@ export default function TourismDirectoryPage() {
     }
   };
 
-  const handleToggleHide = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
+  // Backend accepts either a Mongo _id or the slug for :id routes.
+  const apiId = (item) => item?._id || item?.slug || item?.id;
+
+  const patchStatus = async (id, updateData) => {
+    const item = destinations.find((d) => (d._id || d.id) === id);
+    if (!item) return;
+    // optimistic
+    setDestinations((prev) =>
+      prev.map((d) => ((d._id || d.id) === id ? { ...d, ...updateData } : d))
+    );
+    try {
+      await updateTourismDestinationStatus(apiId(item), updateData);
+    } catch (err) {
+      console.warn('[Tourism] status update failed:', err.message);
+    }
+    loadData();
+  };
+
+  const handleToggleHide = (id) => {
+    const item = destinations.find((d) => (d._id || d.id) === id);
     if (!item) return;
     const isHidden = item.status === 'danger';
-    const newStatus = isHidden ? 'open' : 'danger';
-    const newStatusText = isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS';
-
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, status: newStatus, statusText: newStatusText };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, { status: newStatus, statusText: newStatusText });
-    }
+    patchStatus(id, {
+      status: isHidden ? 'open' : 'danger',
+      statusText: isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS',
+    });
   };
 
-  const handleReinstate = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
-    if (!item) return;
-    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Reinstated by Harbour Master' };
+  const handleReinstate = (id) =>
+    patchStatus(id, { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Reinstated by Harbour Master' });
 
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, ...updateData };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, updateData);
-    }
-  };
-
-  const handlePublishDraft = async (id) => {
-    const item = destinations.find(d => (d._id || d.id) === id);
-    if (!item) return;
-    const updateData = { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Approved by Field Ranger' };
-
-    setDestinations(prev => prev.map(d => {
-      if ((d._id || d.id) === id) {
-        return { ...d, ...updateData };
-      }
-      return d;
-    }));
-
-    if (item._id) {
-      await updateTourismDestinationStatus(item._id, updateData);
-    }
-  };
+  const handlePublishDraft = (id) =>
+    patchStatus(id, { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Approved by Field Ranger' });
 
   const handleDelete = async (id, name) => {
-    if (confirm(`Are you sure you want to remove ${name} from registry?`)) {
-      const item = destinations.find(d => (d._id || d.id) === id);
-      setDestinations(prev => prev.filter(d => (d._id || d.id) !== id));
-      if (item?._id) {
-        await deleteTourismDestination(item._id);
-      }
+    if (!confirm(`Are you sure you want to remove ${name} from registry?`)) return;
+    const item = destinations.find((d) => (d._id || d.id) === id);
+    setDestinations((prev) => prev.filter((d) => (d._id || d.id) !== id));
+    try {
+      await deleteTourismDestination(apiId(item));
+    } catch (err) {
+      console.warn('[Tourism] delete failed:', err.message);
     }
+    loadData();
   };
 
   const handleSyncFeeds = async () => {
@@ -488,9 +479,9 @@ export default function TourismDirectoryPage() {
                           </button>
                         )}
 
-                        <Link 
-                          to="/admin/tourism/new" 
-                          className="btn-icon" 
+                        <Link
+                          to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
+                          className="btn-icon"
                           title="Edit Entry"
                           style={{ color: 'var(--text-secondary)' }}
                         >

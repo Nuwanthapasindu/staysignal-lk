@@ -105,8 +105,12 @@ export const createDestination = async (req, res) => {
     }
 
     if (!data.nodeId) {
-      data.nodeId = 'UNESCO-LK-' + Math.floor(1000 + Math.random() * 9000);
+      data.nodeId = 'LK-SLTDA-' + Math.floor(1000 + Math.random() * 9000);
     }
+    // Required-by-schema fields — fill sensible placeholders if the form left them blank.
+    if (!data.province) data.province = 'Not specified';
+    if (!data.district) data.district = 'Not specified';
+    if (!data.category) data.category = 'Heritage & Archaeological';
 
     const destination = new TourismDestination(data);
     await destination.save();

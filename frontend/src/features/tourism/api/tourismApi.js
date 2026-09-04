@@ -1,4 +1,4 @@
-import { get, post, patch, del } from '../../../shared/api/client';
+import { get, post, put, patch, del } from '../../../shared/api/client';
 import { tourismList, tourismStats, sigiriyaDetail } from '../data/tourismData';
 
 const buildQuery = (params = {}) => {
@@ -11,16 +11,18 @@ const buildQuery = (params = {}) => {
   return s ? `?${s}` : '';
 };
 
+// List — reflects the DB. Bundled data is only a last resort when the API is down.
 export const fetchTourismDestinations = async (params = {}) => {
   try {
     const res = await get(`/tourism${buildQuery(params)}`);
-    const list = res.data ?? [];
-    // Fall back to the bundled dataset when the API has nothing to show.
-    if (!list.length) return { destinations: tourismList, stats: tourismStats };
-    return { destinations: list, stats: res.stats || tourismStats };
+    return {
+      destinations: res.data ?? [],
+      stats: res.stats || tourismStats,
+      offline: false,
+    };
   } catch (err) {
     console.warn('[Tourism API] offline fallback:', err.message);
-    return { destinations: tourismList, stats: tourismStats };
+    return { destinations: tourismList, stats: tourismStats, offline: true };
   }
 };
 
@@ -34,29 +36,12 @@ export const fetchTourismDestination = async (slug) => {
   }
 };
 
-export const createTourismDestination = async (data) => {
-  try {
-    return await post('/tourism', data);
-  } catch (err) {
-    console.warn('[Tourism API] local fallback for create:', err.message);
-    return { success: true, data };
-  }
-};
+// CRUD — let errors propagate so the page can show them.
+export const createTourismDestination = (data) => post('/tourism', data);
 
-export const updateTourismDestinationStatus = async (id, statusData) => {
-  try {
-    return await patch(`/tourism/${encodeURIComponent(id)}/status`, statusData);
-  } catch (err) {
-    console.warn('[Tourism API] local fallback for status:', err.message);
-    return { success: true };
-  }
-};
+export const updateTourismDestination = (id, data) => put(`/tourism/${encodeURIComponent(id)}`, data);
 
-export const deleteTourismDestination = async (id) => {
-  try {
-    return await del(`/tourism/${encodeURIComponent(id)}`);
-  } catch (err) {
-    console.warn('[Tourism API] local fallback for delete:', err.message);
-    return { success: true };
-  }
-};
+export const updateTourismDestinationStatus = (id, statusData) =>
+  patch(`/tourism/${encodeURIComponent(id)}/status`, statusData);
+
+export const deleteTourismDestination = (id) => del(`/tourism/${encodeURIComponent(id)}`);

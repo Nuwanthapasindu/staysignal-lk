@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Landmark, 
   Compass, 
@@ -22,24 +22,30 @@ import {
   PhoneCall,
   CameraOff
 } from 'lucide-react';
-import { createTourismDestination } from '../api/tourismApi';
+import {
+  createTourismDestination,
+  updateTourismDestination,
+  fetchTourismDestination,
+} from '../api/tourismApi';
 
 export default function AddTourismPlacePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editSlug = searchParams.get('edit');
+  const isEditing = !!editSlug;
 
-  // Form State initialized matching Image 1
-  const [name, setName] = useState('Sigiriya Rock Fortress & Water Gardens');
-  const [nodeId, setNodeId] = useState('UNESCO-LK-0014');
+  const [name, setName] = useState('');
+  const [nodeId, setNodeId] = useState('');
   const [category, setCategory] = useState('Heritage & Archaeological');
-  const [smsSummary, setSmsSummary] = useState('Sigiriya open. Clear skies. Water gardens operating. Mirror wall accessible. 1,200 steps clear.');
-  const [overview, setOverview] = useState('Ancient 5th-century palace citadel featuring terraced water gardens, legendary fresco galleries, mirror-glazed ramparts, and the colossal stone Lion Gate perched upon a 200-meter sheer monolithic rock plug.');
-  
+  const [smsSummary, setSmsSummary] = useState('');
+  const [overview, setOverview] = useState('');
+
   const [province, setProvince] = useState('Central Province');
-  const [district, setDistrict] = useState('Matale District (Dambulla Secretariat)');
+  const [district, setDistrict] = useState('');
   const [elevation, setElevation] = useState('349m ASL');
-  const [gps, setGps] = useState('7.9570° N, 80.7603° E');
-  const [corridor, setCorridor] = useState('A6 Corridor (Inamaluwa - Sigiriya Link B423)');
-  const [difficulty, setDifficulty] = useState('steep');
+  const [gps, setGps] = useState('');
+  const [corridor, setCorridor] = useState('');
+  const [difficulty, setDifficulty] = useState('moderate');
 
   const [foreignTariff, setForeignTariff] = useState('USD $36');
   const [localTariff, setLocalTariff] = useState('LKR 150');
@@ -60,12 +66,56 @@ export default function AddTourismPlacePage() {
   const [hospital, setHospital] = useState('Dambulla Base Hospital (14km)');
   const [ambulance, setAmbulance] = useState('1990 Suwa Seriya (Free Dispatch)');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // When ?edit=<slug> is present, load that destination into the form.
+  useEffect(() => {
+    if (!editSlug) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await fetchTourismDestination(editSlug);
+        if (cancelled || !d) return;
+        if (d.name != null) setName(d.name);
+        if (d.nodeId != null) setNodeId(d.nodeId);
+        if (d.category != null) setCategory(d.category);
+        if (d.smsSummary != null) setSmsSummary(d.smsSummary);
+        if (d.overview != null) setOverview(d.overview);
+        if (d.province != null) setProvince(d.province);
+        if (d.district != null) setDistrict(d.district);
+        if (d.elevation != null) setElevation(d.elevation);
+        if (d.gps != null) setGps(d.gps);
+        if (d.corridor != null) setCorridor(d.corridor);
+        if (d.difficulty != null) setDifficulty(d.difficulty);
+        if (d.foreignTariff != null) setForeignTariff(d.foreignTariff);
+        if (d.localTariff != null) setLocalTariff(d.localTariff);
+        if (d.saarcTariff != null) setSaarcTariff(d.saarcTariff);
+        if (d.operatingHours != null) setOperatingHours(d.operatingHours);
+        if (d.guideRequirement != null) setGuideRequirement(d.guideRequirement);
+        if (d.regulations) setRegulations((r) => ({ ...r, ...d.regulations }));
+        if (d.contacts?.touristPolice != null) setTouristPolice(d.contacts.touristPolice);
+        if (d.contacts?.hospital != null) setHospital(d.contacts.hospital);
+        if (d.contacts?.ambulance != null) setAmbulance(d.contacts.ambulance);
+      } catch (err) {
+        if (!cancelled) setError(`Could not load "${editSlug}" for editing: ${err.message}`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editSlug]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError(null);
 
-    await createTourismDestination({
+    if (!name.trim()) {
+      setError('Attraction name is required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const payload = {
       name,
       nodeId,
       category,
@@ -83,16 +133,21 @@ export default function AddTourismPlacePage() {
       smsSummary,
       overview,
       regulations,
-      contacts: {
-        touristPolice,
-        hospital,
-        ambulance
+      contacts: { touristPolice, hospital, ambulance },
+    };
+    try {
+      if (isEditing) {
+        await updateTourismDestination(editSlug, payload);
+      } else {
+        await createTourismDestination(payload);
       }
-    });
-
-    setIsSubmitting(false);
-    alert('Tourism Destination successfully registered and replicated to regional hotel kiosks!');
-    navigate('/admin/tourism');
+      navigate('/admin/tourism');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Could not register the destination.';
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,7 +159,7 @@ export default function AddTourismPlacePage() {
           <span className="breadcrumb-sep">&gt;</span>
           <Link to="/admin/tourism" className="breadcrumb-link">Tourism Places</Link>
           <span className="breadcrumb-sep">&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Register New Destination</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{isEditing ? 'Edit Destination' : 'Register New Destination'}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="badge-tag" style={{ color: '#166534', backgroundColor: '#e5f5ed', fontFamily: 'var(--font-mono)', fontSize: '10.5px' }}>
@@ -125,7 +180,7 @@ export default function AddTourismPlacePage() {
               SLTDA REGISTRY PROTOCOL (ENTRY STAGE)
             </span>
           </div>
-          <h1 className="editorial-title">Add New Tourism Destination & Heritage Place</h1>
+          <h1 className="editorial-title">{isEditing ? 'Edit Tourism Destination' : 'Add New Tourism Destination & Heritage Place'}</h1>
           <p className="editorial-subtitle">
             Standardized registry entry for Department of Wildlife Conservation (DWC) and Sri Lanka Tourism Development Authority (SLTDA). Information directly populates foreign tourist offline guides and travel advisories.
           </p>
@@ -172,13 +227,13 @@ export default function AddTourismPlacePage() {
 
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Official Node / UNESCO ID <span className="required">*</span></label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <label className="form-label">Official Node / SLTDA ID</label>
+                <input
+                  type="text"
+                  className="form-input"
                   value={nodeId}
                   onChange={(e) => setNodeId(e.target.value)}
-                  required
+                  placeholder="Auto-generated if left blank"
                 />
               </div>
               <div className="form-group">
@@ -622,13 +677,14 @@ export default function AddTourismPlacePage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
+              {error && <div className="form-alert" role="alert">{error}</div>}
+              <button
+                type="submit"
+                className="btn btn-primary"
                 style={{ width: '100%', justifyContent: 'center' }}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Publishing...' : 'Publish Destination to Live Registry'}
+                {isSubmitting ? (isEditing ? 'Saving...' : 'Publishing...') : (isEditing ? 'Save Changes' : 'Publish Destination to Live Registry')}
               </button>
               <button 
                 type="button" 
