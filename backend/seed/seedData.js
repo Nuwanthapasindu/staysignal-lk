@@ -552,3 +552,384 @@ export const townSeedData = [
   { name: 'Sigiriya', slug: 'sigiriya', district: 'Matale', province: 'Central Province', belt: 'cultural_triangle', lat: 7.9570, lng: 80.7603 },
   { name: 'Trincomalee', slug: 'trincomalee', district: 'Trincomalee', province: 'Eastern Province', belt: 'east_coast', lat: 8.5874, lng: 81.2152 }
 ];
+export const townsData = [
+  {
+    id: 'ella',
+    slug: 'ella',
+    name: 'Ella',
+    corridor: 'Ella Valley & Wellawaya Passages',
+    district: 'Badulla',
+    province: 'Uva'
+  },
+  {
+    id: 'haputale',
+    slug: 'haputale',
+    name: 'Haputale',
+    corridor: 'Haputale Heights & Beragala Pass',
+    district: 'Badulla',
+    province: 'Uva'
+  },
+  {
+    id: 'nuwara-eliya',
+    slug: 'nuwara-eliya',
+    name: 'Nuwara Eliya',
+    corridor: 'A5 Ramboda Pass & Hakgala Valley',
+    district: 'Nuwara Eliya',
+    province: 'Central'
+  },
+  {
+    id: 'hatton',
+    slug: 'hatton',
+    name: 'Hatton & Peak',
+    corridor: "Adam's Peak · Nallathanniya Base",
+    district: 'Nuwara Eliya',
+    province: 'Central'
+  },
+  {
+    id: 'meemure',
+    slug: 'meemure',
+    name: 'Meemure',
+    corridor: 'Knuckles Range · Heen Ganga Basin',
+    district: 'Kandy',
+    province: 'Central'
+  },
+  {
+    id: 'arugam-bay',
+    slug: 'arugam-bay',
+    name: 'Arugam Bay',
+    corridor: 'East Coast · Panama Corridor',
+    district: 'Ampara',
+    province: 'Eastern'
+  },
+  {
+    id: 'galle',
+    slug: 'galle',
+    name: 'Galle Coast',
+    corridor: 'Southern Coastal Belt · Galle Fort',
+    district: 'Galle',
+    province: 'Southern'
+  },
+  {
+    id: 'mirissa',
+    slug: 'mirissa',
+    name: 'Mirissa',
+    corridor: 'Mirissa Bay & Weligama Pass',
+    district: 'Matara',
+    province: 'Southern'
+  }
+];
+
+export const noticesData = [
+  {
+    id: 'notice-zion-view',
+    customId: 'notice-zion-view',
+    title: 'Zion View',
+    town: 'ella',
+    townName: 'Ella',
+    corridor: 'Ella Valley · A23 Corridor',
+    issue: 'road_closed',
+    status: 'disrupted',
+    isUrgent: true,
+    headline: 'Road closed · Wellawaya-Ella passage',
+    description: 'Culvert repair at 14th Mile Post. Light 4x4 and three-wheelers can divert via Bandarawela-Poonagala road. Stays running generator 6pm-10pm.',
+    bypassAdvice: '4x4 pickup shuttle active from Bandarawela rail depot for verified guests. Avoid heavy vans on Poonagala bypass.',
+    utilities: {
+      generatorStatus: '6:00 PM - 10:00 PM Active',
+      waterStatus: 'Gravity Feed 3000L Reserve',
+      connectivityStatus: 'Dialog 4G + Starlink Relay Active'
+    },
+    contactNumber: '077 412 8901',
+    verifiedBy: 'Estate Dispatch',
+    verifiedAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 14 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-nine-skies-rest',
+    customId: 'notice-nine-skies-rest',
+    title: 'Nine Skies Rest',
+    town: 'ella',
+    townName: 'Ella',
+    corridor: 'Ella Pass · B360 Passara Pass',
+    issue: 'landslide',
+    status: 'disrupted',
+    isUrgent: true,
+    headline: 'Passara road earth slip',
+    description: 'Small slip blocking heavy vans near bridge 4. Local RDA JCB crew on site clearing boulders. Expect 3-4 hr delay. Walking luggage transfer operational.',
+    bypassAdvice: 'Pedestrian bypass bridge open for backpack transfers. Local porter team stationed at Demodara loop.',
+    utilities: {
+      generatorStatus: 'Full Day Diesel Generator',
+      waterStatus: 'Normal Gravity Supply',
+      connectivityStatus: 'Mobitel 4G Active'
+    },
+    contactNumber: '077 391 2284',
+    verifiedBy: 'Grama Niladhari',
+    verifiedAt: new Date(Date.now() - 22 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 22 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-mandira-cottage',
+    customId: 'notice-mandira-cottage',
+    title: 'Mandira Cottage',
+    town: 'haputale',
+    townName: 'Haputale',
+    corridor: 'Haputale Heights · Dambatenna Road',
+    issue: 'no_water',
+    status: 'caution',
+    isUrgent: false,
+    headline: 'Water supply cut until 4pm',
+    description: 'Municipal pipeline rupture. No tap water supply until 4:00 PM. Backup water bowser en route, delayed by mist on the pass. 2000L backup tanks active, drinking water bottles distributed to all rooms.',
+    bypassAdvice: 'Beragala-Haputale main road open to all vehicles. Drive with fog lamps.',
+    utilities: {
+      generatorStatus: 'Grid Power Stable',
+      waterStatus: '2000L Backup Tank + Bottled Water',
+      connectivityStatus: 'SLT Fibre Active'
+    },
+    contactNumber: '071 829 4432',
+    verifiedBy: 'Water Board Notice',
+    verifiedAt: new Date(Date.now() - 42 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 70 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 42 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-heritance-view-lodge',
+    customId: 'notice-heritance-view-lodge',
+    title: 'Heritance View Lodge',
+    town: 'nuwara-eliya',
+    townName: 'Nuwara Eliya',
+    corridor: 'Highlands · A5 Ramboda Pass',
+    issue: 'flooded_access',
+    status: 'caution',
+    isUrgent: false,
+    headline: 'Extreme mist & < 5m visibility',
+    description: 'Heavy mountain fog descending over Ramboda hairpin bends. Speed limit 15km/h advised. Water heaters running on dedicated generator circuit. Vehicles advised to drive in convoys with fog hazard indicators.',
+    bypassAdvice: 'Drive via Gampola during daylight hours if unfamiliar with hairpin descent.',
+    utilities: {
+      generatorStatus: 'Dedicated Heater Generator Active',
+      waterStatus: 'Normal Hot Water Available',
+      connectivityStatus: 'Dialog 4G Active'
+    },
+    contactNumber: '052 222 3490',
+    verifiedBy: 'Police Checkpoint',
+    verifiedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-surf-nest',
+    customId: 'notice-surf-nest',
+    title: 'Surf Nest',
+    town: 'arugam-bay',
+    townName: 'Arugam Bay',
+    corridor: 'East Coast · Panama Corridor',
+    issue: 'road_closed',
+    status: 'open',
+    isUrgent: false,
+    headline: 'Access clear · Panama road open',
+    description: 'Monsoon swell manageable, grid power stable today. Tuk-tuks running standard coastal rates to Pottuvil without delays. Generators fueled, Starlink relay operational.',
+    bypassAdvice: 'Main coastal corridor clear to all vehicular traffic.',
+    utilities: {
+      generatorStatus: 'Solar + Standby Genset',
+      waterStatus: 'Well Water Filtered',
+      connectivityStatus: 'Starlink 180Mbps Active'
+    },
+    contactNumber: '076 550 1198',
+    verifiedBy: 'Coastguard Station',
+    verifiedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-peak-trail-homestay',
+    customId: 'notice-peak-trail-homestay',
+    title: 'Peak Trail Homestay',
+    town: 'hatton',
+    townName: 'Hatton',
+    corridor: "Adam's Peak · Nallathanniya Base",
+    issue: 'bridge_unsafe',
+    status: 'open',
+    isUrgent: false,
+    headline: 'Pilgrim trail & rail clear',
+    description: 'Trains from Kandy running on schedule through Hatton station. Clear path from station, hot showers available, trail lights operating smoothly.',
+    bypassAdvice: 'Hatton to Nallathanniya direct bus running every 30 minutes.',
+    utilities: {
+      generatorStatus: 'Solar Hot Water + CEB Stable',
+      waterStatus: 'Continuous Mountain Stream',
+      connectivityStatus: 'Dialog 4G Stable'
+    },
+    contactNumber: '071 559 8812',
+    verifiedBy: 'Station Master',
+    verifiedAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 65 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-knuckles-wilderness-nest',
+    customId: 'notice-knuckles-wilderness-nest',
+    title: 'Knuckles Wilderness Nest',
+    town: 'meemure',
+    townName: 'Meemure',
+    corridor: 'Knuckles Range · Heen Ganga Basin',
+    issue: 'flooded_access',
+    status: 'caution',
+    isUrgent: false,
+    headline: 'Heen Ganga water level high',
+    description: 'Normal vans cannot ford river crossing today. Homestay tractor stationed at Hunnasgiriya to ferry arriving guests across safely.',
+    bypassAdvice: 'Call ahead at least 2 hours before reaching Hunnasgiriya junction for tractor transfer link.',
+    utilities: {
+      generatorStatus: 'Micro-Hydro + Battery Bank',
+      waterStatus: 'Pure Spring Water System',
+      connectivityStatus: 'Satellite Phone & Mesh Node'
+    },
+    contactNumber: '081 240 1902',
+    verifiedBy: 'Local Guide Union',
+    verifiedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-lagoon-gate-eco-hut',
+    customId: 'notice-lagoon-gate-eco-hut',
+    title: 'Lagoon Gate Eco Hut',
+    town: 'arugam-bay',
+    townName: 'Arugam Bay',
+    corridor: 'Panama Sanctuary · Southern Spit',
+    issue: 'flooded_access',
+    status: 'disrupted',
+    isUrgent: false,
+    headline: 'Lagoon overflow on feeder road',
+    description: 'Tide water over 200m track near salt marsh. Boat shuttle running continuously from Panama bridge for guests carrying rucksacks.',
+    bypassAdvice: 'Park vehicle at Panama bridge compound. Free boat transfer for guests.',
+    utilities: {
+      generatorStatus: '100% Off-grid Solar Array',
+      waterStatus: 'Rainwater Harvest Reserve',
+      connectivityStatus: 'Dialog 3G Intermittent'
+    },
+    contactNumber: '063 224 8190',
+    verifiedBy: 'Wildlife Warden',
+    verifiedAt: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 180 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-rampart-street-villa',
+    customId: 'notice-rampart-street-villa',
+    title: 'Rampart Street Villa',
+    town: 'galle',
+    townName: 'Galle',
+    corridor: 'Southern Coastal Belt · Galle Fort',
+    issue: 'power_cut',
+    status: 'open',
+    isUrgent: false,
+    headline: 'Expressway & town clear',
+    description: 'Southern Expressway normal traffic, calm sea breeze, municipal CEB power grid completely stable without scheduled rolling outages.',
+    bypassAdvice: 'Direct access via Pinnaduwa interchange.',
+    utilities: {
+      generatorStatus: 'Full Inverter Backup',
+      waterStatus: 'City Main Constant Pressure',
+      connectivityStatus: 'High-Speed Fibre 200Mbps'
+    },
+    contactNumber: '091 223 4488',
+    verifiedBy: 'Tourist Police Desk',
+    verifiedAt: new Date(Date.now() - 185 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 250 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 185 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-ella-mount-heaven',
+    customId: 'notice-ella-mount-heaven',
+    title: 'Ella Mount Heaven',
+    town: 'ella',
+    townName: 'Ella',
+    corridor: 'Ella Valley · Passara Link',
+    issue: 'road_closed',
+    status: 'open',
+    isUrgent: false,
+    headline: 'Direct access via Bandarawela clear',
+    description: 'Main Bandarawela road fully open. High-speed fiber WiFi running and hot water boilers operational for all checked-in travellers. Open stays nearby to accommodate diverted guests.',
+    bypassAdvice: 'Use Bandarawela-Ella bypass road. No obstacles reported.',
+    utilities: {
+      generatorStatus: 'Auto-Start Generator',
+      waterStatus: 'Full Spring Reservoirs',
+      connectivityStatus: 'Fibre & 5G Available'
+    },
+    contactNumber: '077 654 3210',
+    verifiedBy: 'Host Dispatch',
+    verifiedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-tea-garden-rest',
+    customId: 'notice-tea-garden-rest',
+    title: 'Tea Garden Rest',
+    town: 'haputale',
+    townName: 'Haputale',
+    corridor: 'Haputale · Beragala Pass',
+    issue: 'no_water',
+    status: 'open',
+    isUrgent: false,
+    headline: 'Mountain spring feed running',
+    description: 'Private spring gravity tank full and operational. Solar backup inverter operational. Clear passage on Beragala ascent with normal driving conditions.',
+    bypassAdvice: 'Beragala road fully clear.',
+    utilities: {
+      generatorStatus: 'Solar Inverter 24/7',
+      waterStatus: 'Spring Water Operational',
+      connectivityStatus: 'Mobitel 4G High Signal'
+    },
+    contactNumber: '071 998 7766',
+    verifiedBy: 'Verified Host',
+    verifiedAt: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 50 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-misty-valley-inn',
+    customId: 'notice-misty-valley-inn',
+    title: 'Misty Valley Inn',
+    town: 'nuwara-eliya',
+    townName: 'Nuwara Eliya',
+    corridor: 'Nuwara Eliya · Hakgala Route',
+    issue: 'power_cut',
+    status: 'resolved',
+    isUrgent: false,
+    headline: 'CEB power restored to Hakgala circuit',
+    description: 'High winds caused transformer trip at 06:00, resolved by CEB emergency unit at 10:15. Heating and power fully back online across the estate.',
+    bypassAdvice: 'All roads clear and fully passable.',
+    utilities: {
+      generatorStatus: 'Grid Restored + Standby Generator',
+      waterStatus: 'Boilers Fully Active',
+      connectivityStatus: 'Fibre + 4G Restored'
+    },
+    contactNumber: '052 887 6543',
+    verifiedBy: 'CEB Emergency Desk',
+    verifiedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 300 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 120 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notice-passara-ridge-haven',
+    customId: 'notice-passara-ridge-haven',
+    title: 'Passara Ridge Haven',
+    town: 'ella',
+    townName: 'Ella',
+    corridor: 'Ella · Passara Ridge',
+    issue: 'relocation',
+    status: 'closed',
+    isUrgent: false,
+    headline: 'Temporary closure for retaining wall work',
+    description: 'Scheduled geotechnical reinforcement at lower driveway. All current reservations safely relocated to partner lodge in Ella town. Expected re-opening next Monday.',
+    bypassAdvice: 'Contact manager for partner property voucher.',
+    utilities: {
+      generatorStatus: 'Standby Only',
+      waterStatus: 'Limited Supply',
+      connectivityStatus: 'Staff Phone Active'
+    },
+    contactNumber: '077 889 0011',
+    verifiedBy: 'NBRO Geotechnical Unit',
+    verifiedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 400 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 240 * 60 * 1000).toISOString()
+  }
+];

@@ -2,54 +2,47 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import env from './config/env.js';
-import apiRoutes from './routes/index.js';
+import authRoutes from './routes/auth.routes.js';
+import { HttpError } from './utils/httpError.js';
+import noticeRoutes from './routes/noticeRoutes.js';
+import townRoutes from './routes/townRoutes.js';
 
 const app = express();
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl) or if origin is in allowed list
-    if (!origin || env.CLIENT_ORIGIN.includes(origin) || env.CLIENT_ORIGIN.includes('*')) {
-      return callback(null, true);
-    }
-    // Also allow any localhost port during development
-    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      return callback(null, true);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
+app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(cookieParser());
+if (env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
 // Routes
-app.use('/api', apiRoutes);
+app.use('/api/auth', authRoutes);
 
-// Root greeting
-app.get('/', (req, res) => {
-  res.json({
-    name: 'StaySignal LK Federated Field Ledger API',
-    version: '1.0.0',
-    docs: '/api/health'
-  });
+// 404 for unmatched API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: { code: 'NOT_FOUND', message: `No route for ${req.method} ${req.originalUrl}` } });
 });
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
-});
-
-// Global Error Handler
+// Centralised error envelope: { error: { code, message, fields? } }
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error('[API Server Error]:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error'
-  });
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({
+      error: { code: err.code, message: err.message, ...(err.fields ? { fields: err.fields } : {}) },
+    });
+  }
+  console.error(err);
+  res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong.' } });
+// API Routes
+app.use('/api', noticeRoutes);
+app.use('/api', townRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 export default app;
