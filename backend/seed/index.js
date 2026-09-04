@@ -5,7 +5,8 @@ import { TourismDestination, User } from '../models/index.js';
 import { hashPassword } from '../utils/password.js';
 import { noticesData, townsData, tourismSeedData } from './seedData.js';
 
-// Demo accounts documented in README.md — kept in sync with that section.
+// Fallback demo accounts (separate from the real test accounts documented
+// in README.md, which were created via normal signup, not this script).
 const DEMO_USERS = [
   { name: 'Amali Perera', email: 'amali@zionview.lk', password: 'Owner123!', role: 'owner', phone: '0771234567' },
   { name: 'Kasun Silva', email: 'kasun@gmail.com', password: 'Travel123!', role: 'traveller' },

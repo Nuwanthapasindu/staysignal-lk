@@ -13,7 +13,7 @@ guest-house operators and travellers.
 cd backend
 cp .env.example .env        # fill in MONGO_URI + the two JWT secrets
 npm install
-npm run seed                # creates the two demo users below
+npm run seed                # seeds towns/notices/tourism data
 npm run dev                 # http://localhost:5000
 
 # frontend (separate terminal)
@@ -42,10 +42,10 @@ The role is fixed by the signup route — the API ignores any `role` sent in the
 **Signup creates the account only** (no session); the user is redirected to `/login`
 to sign in. After login you land on `/notices` (traveller) or `/owner` (owner).
 
-Demo users (seeded by `npm run seed`, **demo only**):
+Already-created test accounts (**demo only**):
 
-- `amali@zionview.lk` / `Owner123!` — owner
-- `kasun@gmail.com` / `Travel123!` — traveller
+- `pasindhukavishan@gmail.com` / `Nuwantha@2004` — owner
+- `hnpkdias@gmail.com` / `Nuwantha@2004` — traveller
 
 ### Tokens
 
@@ -108,9 +108,9 @@ and `frontend/src/features/auth/validation.js`):
 - owner phone — `07XXXXXXXX` or `+947XXXXXXXX`
 
 ## Demo Users
-For testing the authentication and RBAC system locally, you can use the following seeded accounts:
-- **Owner Account**: `amali@zionview.lk` | Password: `Owner123!` (role=owner)
-- **Traveller Account**: `kasun@gmail.com` | Password: `Travel123!` (role=traveller)
+For testing the authentication and RBAC system, you can use the following already-created accounts:
+- **Owner Account**: `pasindhukavishan@gmail.com` | Password: `Nuwantha@2004` (role=owner)
+- **Traveller Account**: `hnpkdias@gmail.com` | Password: `Nuwantha@2004` (role=traveller)
 
 ## API Documentation (Swagger)
 
@@ -155,12 +155,10 @@ When deploying:
 | `traveller` | Everything a guest can, plus a personalised landing on `/notices` | Create/edit/delete notices or tourism destinations; open `/owner` |
 | `owner` | Publish/edit/delete disruption notices; add/edit/delete tourism destinations incl. photo uploads; use the Host Operations Desk (`/owner`, `/post`) | — |
 
-Already-created demo account credentials (seeded/upserted by `npm run seed` —
-safe to re-run, it won't duplicate or break existing accounts):
+Already-created demo account credentials:
 
 | Role | Email | Password |
 | --- | --- | --- |
-| `owner` | `amali@zionview.lk` | `Owner123!` |
-| `traveller` | `kasun@gmail.com` | `Travel123!` |
+| `owner` | `pasindhukavishan@gmail.com` | `Nuwantha@2004` |
+| `traveller` | `hnpkdias@gmail.com` | `Nuwantha@2004` |
 
-⚠️ Demo credentials only — rotate or remove them before any real deployment.
