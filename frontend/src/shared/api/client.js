@@ -2,10 +2,9 @@
 // so this module stays free of React and of any token storage.
 import axios from 'axios';
 
-const rawBaseUrl = import.meta.env.VITE_API_URL || '';
-
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // Empty in dev → same-origin /api/... via the Vite proxy. A real origin in prod.
+  baseURL: import.meta.env.VITE_API_URL || '',
   withCredentials: true, // send the refresh cookie
 });
 
