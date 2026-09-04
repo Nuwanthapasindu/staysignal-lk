@@ -32,14 +32,26 @@ const OWNER = {
   phone: '0771234567',
 };
 
-test('traveller signup → 201, role traveller, no password_hash', async () => {
-  const c = makeClient();
-  const res = await c('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
+// Signup no longer issues a session — register, then log in to get tokens.
+const register = (person, role = 'traveller') =>
+  makeClient()(`/api/auth/signup/${role}`, { method: 'POST', body: person });
+
+const loginAs = async (person, client = makeClient()) => {
+  const res = await client('/api/auth/login', {
+    method: 'POST',
+    body: { email: person.email, password: person.password },
+  });
+  return { ...res, accessToken: res.body.accessToken, client };
+};
+
+test('traveller signup → 201, role traveller, no password_hash, no session', async () => {
+  const res = await register(TRAVELLER, 'traveller');
   assert.equal(res.status, 201);
   assert.equal(res.body.user.role, 'traveller');
   assert.equal('password_hash' in res.body.user, false);
-  assert.ok(res.body.accessToken);
-  assert.ok(res.rawCookie?.startsWith('refresh_token='));
+  // signup creates the account only — the client must log in afterwards
+  assert.equal(res.body.accessToken, undefined);
+  assert.equal(res.rawCookie, null);
 });
 
 test('owner signup without phone → 400 with fields.phone', async () => {
@@ -59,28 +71,22 @@ test('duplicate email → 409 with fields.email', async () => {
 });
 
 test('single /login works for both roles and the JWT role matches the DB', async () => {
-  await makeClient()('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
-  await makeClient()('/api/auth/signup/owner', { method: 'POST', body: OWNER });
+  await register(TRAVELLER, 'traveller');
+  await register(OWNER, 'owner');
 
-  const t = await makeClient()('/api/auth/login', {
-    method: 'POST',
-    body: { email: TRAVELLER.email, password: TRAVELLER.password },
-  });
+  const t = await loginAs(TRAVELLER);
   assert.equal(t.status, 200);
-  assert.equal(decodeJwt(t.body.accessToken).role, 'traveller');
+  assert.equal(decodeJwt(t.accessToken).role, 'traveller');
+  assert.ok(t.rawCookie?.startsWith('refresh_token='));
 
-  const o = await makeClient()('/api/auth/login', {
-    method: 'POST',
-    body: { email: OWNER.email, password: OWNER.password },
-  });
+  const o = await loginAs(OWNER);
   assert.equal(o.status, 200);
-  assert.equal(decodeJwt(o.body.accessToken).role, 'owner');
+  assert.equal(decodeJwt(o.accessToken).role, 'owner');
 });
 
 test('wrong password → 401 with the generic message', async () => {
-  const c = makeClient();
-  await c('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
-  const res = await c('/api/auth/login', {
+  await register(TRAVELLER, 'traveller');
+  const res = await makeClient()('/api/auth/login', {
     method: 'POST',
     body: { email: TRAVELLER.email, password: 'wrong-password-1' },
   });
@@ -98,13 +104,14 @@ test('unknown email → 401 with the same generic message', async () => {
 });
 
 test('GET /api/auth/me — 200 with token, 401 without', async () => {
-  const c = makeClient();
-  const signup = await c('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
-  const ok = await c('/api/auth/me', { token: signup.body.accessToken });
+  await register(TRAVELLER, 'traveller');
+  const { accessToken } = await loginAs(TRAVELLER);
+
+  const ok = await makeClient()('/api/auth/me', { token: accessToken });
   assert.equal(ok.status, 200);
   assert.equal(ok.body.user.email, TRAVELLER.email);
 
-  const anon = await c('/api/auth/me');
+  const anon = await makeClient()('/api/auth/me');
   assert.equal(anon.status, 401);
 });
 
@@ -114,9 +121,10 @@ test('tampered / invalid access token → 401', async () => {
 });
 
 test('refresh rotates: old refresh cookie stops working, new one works', async () => {
+  await register(TRAVELLER, 'traveller');
   const c = makeClient();
-  const signup = await c('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
-  const originalCookie = signup.rawCookie;
+  const signin = await loginAs(TRAVELLER, c);
+  const originalCookie = signin.rawCookie;
 
   const r1 = await c('/api/auth/refresh', { method: 'POST' });
   assert.equal(r1.status, 200);
@@ -144,18 +152,19 @@ test("requireRole('owner') — traveller 403, owner passes", async () => {
   const server = probe.listen(0);
   const url = `http://127.0.0.1:${server.address().port}`;
 
-  const c = makeClient();
-  const t = await c('/api/auth/signup/traveller', { method: 'POST', body: TRAVELLER });
-  const o = await c('/api/auth/signup/owner', { method: 'POST', body: OWNER });
+  await register(TRAVELLER, 'traveller');
+  await register(OWNER, 'owner');
+  const t = await loginAs(TRAVELLER);
+  const o = await loginAs(OWNER);
 
   const asTraveller = await fetch(`${url}/owner-only`, {
-    headers: { authorization: `Bearer ${t.body.accessToken}` },
+    headers: { authorization: `Bearer ${t.accessToken}` },
   });
   assert.equal(asTraveller.status, 403);
   assert.equal((await asTraveller.json()).error.code, 'FORBIDDEN');
 
   const asOwner = await fetch(`${url}/owner-only`, {
-    headers: { authorization: `Bearer ${o.body.accessToken}` },
+    headers: { authorization: `Bearer ${o.accessToken}` },
   });
   assert.equal(asOwner.status, 200);
 

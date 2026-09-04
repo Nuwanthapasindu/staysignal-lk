@@ -11,10 +11,13 @@ import {
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// In prod the frontend may sit on a different origin, so the refresh cookie needs
+// SameSite=None + Secure. In dev everything is same-origin via the Vite proxy, where
+// Lax works and Secure would drop the cookie over plain http.
 const cookieOptions = {
   httpOnly: true,
   secure: env.IS_PROD,
-  sameSite: 'lax',
+  sameSite: env.IS_PROD ? 'none' : 'lax',
   path: '/api/auth',
 };
 
@@ -38,8 +41,9 @@ const sendSession = (res, status, { user, accessToken, refreshToken }) => {
 
 const signupHandler = (schema, role) => async (req, res) => {
   const data = parseOr400(schema, req.body);
-  const result = await authService.signup({ ...data, role });
-  sendSession(res, 201, result);
+  const { user } = await authService.signup({ ...data, role });
+  // Account created — no session issued; the client redirects to /login.
+  res.status(201).json({ user });
 };
 
 export const signupTraveller = signupHandler(signupTravellerSchema, 'traveller');

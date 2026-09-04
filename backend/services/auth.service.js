@@ -48,8 +48,8 @@ export const signup = async ({ name, email, password, phone, role }) => {
     throw err;
   }
 
-  const session = await issueSession(user);
-  return { user: publicUser(user), ...session };
+  // No session on signup — the user must sign in explicitly afterwards.
+  return { user: publicUser(user) };
 };
 
 export const login = async ({ email, password }) => {

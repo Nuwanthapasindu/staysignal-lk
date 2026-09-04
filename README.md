@@ -39,7 +39,8 @@ JWT auth with two roles, stored as an enum (`traveller`, `owner`).
 | Sign up as owner | `/signup/owner` | name, email, password, phone *(required, SL mobile)* |
 
 The role is fixed by the signup route — the API ignores any `role` sent in the body.
-After login/signup you land on `/notices` (traveller) or `/owner` (owner).
+**Signup creates the account only** (no session); the user is redirected to `/login`
+to sign in. After login you land on `/notices` (traveller) or `/owner` (owner).
 
 Demo users (seeded by `npm run seed`, **demo only**):
 
@@ -60,8 +61,8 @@ Demo users (seeded by `npm run seed`, **demo only**):
 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
-| POST | `/signup/traveller` | public | 201 + session |
-| POST | `/signup/owner` | public | phone required |
+| POST | `/signup/traveller` | public | 201 `{ user }`, no session |
+| POST | `/signup/owner` | public | phone required, no session |
 | POST | `/login` | public | 401 `Email or password is incorrect.` for bad email *or* password |
 | POST | `/refresh` | refresh cookie | rotates the refresh token |
 | POST | `/logout` | cookie | revokes + clears the cookie |

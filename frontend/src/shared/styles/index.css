@@ -476,6 +476,16 @@ main {
   margin-bottom: 1rem;
 }
 
+.form-notice {
+  background: rgba(47, 111, 78, 0.1);
+  border: 1px solid rgba(47, 111, 78, 0.28);
+  color: var(--ceylon-green);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
 /* ---------- simple centered pages ---------- */
 
 .narrow-page {

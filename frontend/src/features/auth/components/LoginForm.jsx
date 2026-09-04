@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import TextField from './TextField';
 import PasswordField from './PasswordField';
 import { useLogin } from '../hooks/useLogin';
@@ -7,7 +7,9 @@ import { validate, loginSchema } from '../validation';
 
 export default function LoginForm() {
   const { submit, submitting, formError, fieldErrors } = useLogin();
-  const [values, setValues] = useState({ email: '', password: '' });
+  const location = useLocation();
+  const registered = location.state?.registered;
+  const [values, setValues] = useState({ email: location.state?.email ?? '', password: '' });
   const [clientErrors, setClientErrors] = useState({});
 
   const errors = { ...fieldErrors, ...clientErrors };
@@ -35,6 +37,11 @@ export default function LoginForm() {
         Broadcast road closures, water rationing schedules, and generator hours directly to drivers and incoming guests.
       </p>
 
+      {registered && !formError && (
+        <div className="form-notice" role="status">
+          Account created. Sign in with your email and password to continue.
+        </div>
+      )}
       {formError && <div className="form-alert" role="alert">{formError}</div>}
 
       <TextField

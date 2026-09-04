@@ -3,6 +3,19 @@ import { setAuthAccessor } from '../../../shared/api/client';
 import * as authApi from '../api/auth.api';
 import { AuthContext } from './authContext';
 
+// Module-level single-flight: React StrictMode double-invokes effects in dev, and
+// the axios interceptor can also ask for a refresh — all of them must share ONE
+// network call so the refresh token is rotated exactly once.
+let pendingRefresh = null;
+const runRefresh = () => {
+  if (!pendingRefresh) {
+    pendingRefresh = authApi.refresh().finally(() => {
+      pendingRefresh = null;
+    });
+  }
+  return pendingRefresh;
+};
+
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -18,9 +31,9 @@ export default function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // Silent refresh used by the axios interceptor on a 401.
+  // Used by the axios interceptor on a 401.
   const refreshSession = useCallback(async () => {
-    const { user: u, accessToken } = await authApi.refresh();
+    const { user: u, accessToken } = await runRefresh();
     setSession(u, accessToken);
     return accessToken;
   }, [setSession]);
@@ -33,20 +46,13 @@ export default function AuthProvider({ children }) {
     });
   }, [refreshSession, clearSession]);
 
-  // Boot: try to restore a session from the refresh cookie.
+  // Boot: restore a session from the refresh cookie (if any).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { user: u, accessToken } = await authApi.refresh();
-        if (cancelled) return;
-        setSession(u, accessToken);
-        try {
-          const fresh = await authApi.me();
-          if (!cancelled) setUser(fresh.user);
-        } catch {
-          /* keep the user from refresh */
-        }
+        const { user: u, accessToken } = await runRefresh();
+        if (!cancelled) setSession(u, accessToken);
       } catch {
         if (!cancelled) clearSession();
       } finally {
@@ -67,15 +73,12 @@ export default function AuthProvider({ children }) {
     [setSession]
   );
 
-  const signup = useCallback(
-    async (role, body) => {
-      const call = role === 'owner' ? authApi.signupOwner : authApi.signupTraveller;
-      const { user: u, accessToken } = await call(body);
-      setSession(u, accessToken);
-      return u;
-    },
-    [setSession]
-  );
+  // Signup creates the account only — no session. The caller redirects to /login.
+  const signup = useCallback(async (role, body) => {
+    const call = role === 'owner' ? authApi.signupOwner : authApi.signupTraveller;
+    const { user: u } = await call(body);
+    return u;
+  }, []);
 
   const logout = useCallback(async () => {
     try {
