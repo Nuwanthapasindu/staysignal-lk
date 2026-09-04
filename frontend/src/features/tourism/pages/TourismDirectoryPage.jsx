@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   Landmark, 
   Trees, 
@@ -14,12 +14,10 @@ import {
   Search, 
   RotateCcw, 
   RefreshCw, 
-  Eye, 
-  EyeOff, 
-  Edit, 
-  Trash2, 
-  History, 
-  Radio, 
+  Eye,
+  Edit,
+  Trash2,
+  Radio,
   FileSpreadsheet, 
   DollarSign, 
   CheckSquare, 
@@ -30,13 +28,11 @@ import {
 } from 'lucide-react';
 import {
   fetchTourismDestinations,
-  updateTourismDestinationStatus,
   deleteTourismDestination,
   resolveMediaUrl,
 } from '../api/tourismApi';
 
 export default function TourismDirectoryPage() {
-  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedProvince, setSelectedProvince] = useState('All Provinces');
@@ -132,37 +128,6 @@ export default function TourismDirectoryPage() {
 
   // Backend accepts either a Mongo _id or the slug for :id routes.
   const apiId = (item) => item?._id || item?.slug || item?.id;
-
-  const patchStatus = async (id, updateData) => {
-    const item = destinations.find((d) => (d._id || d.id) === id);
-    if (!item) return;
-    // optimistic
-    setDestinations((prev) =>
-      prev.map((d) => ((d._id || d.id) === id ? { ...d, ...updateData } : d))
-    );
-    try {
-      await updateTourismDestinationStatus(apiId(item), updateData);
-    } catch (err) {
-      console.warn('[Tourism] status update failed:', err.message);
-    }
-    loadData();
-  };
-
-  const handleToggleHide = (id) => {
-    const item = destinations.find((d) => (d._id || d.id) === id);
-    if (!item) return;
-    const isHidden = item.status === 'danger';
-    patchStatus(id, {
-      status: isHidden ? 'open' : 'danger',
-      statusText: isHidden ? 'PUBLISHED / OPEN' : 'HIDDEN FROM DESKS',
-    });
-  };
-
-  const handleReinstate = (id) =>
-    patchStatus(id, { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Reinstated by Harbour Master' });
-
-  const handlePublishDraft = (id) =>
-    patchStatus(id, { status: 'open', statusText: 'PUBLISHED / OPEN', statusSub: 'Approved by Field Ranger' });
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Are you sure you want to remove ${name} from registry?`)) return;
