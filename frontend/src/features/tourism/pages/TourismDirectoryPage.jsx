@@ -458,42 +458,14 @@ export default function TourismDirectoryPage() {
 
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        {item.status === 'draft' ? (
-                          <button 
-                            className="btn btn-primary btn-sm" 
-                            style={{ padding: '3px 8px', fontSize: '11px' }}
-                            onClick={() => handlePublishDraft(rowId)}
-                          >
-                            Review Draft
-                          </button>
-                        ) : item.status === 'danger' && (item.id === 'pigeon-island-06' || item.slug === 'pigeon-island') ? (
-                          <button 
-                            className="btn btn-secondary btn-sm" 
-                            style={{ padding: '3px 8px', fontSize: '11px', color: '#166534' }}
-                            onClick={() => handleReinstate(rowId)}
-                          >
-                            Reinstate
-                          </button>
-                        ) : (
-                          <Link 
-                            to={`/tourism/${item.slug}`} 
-                            className="btn-icon" 
-                            title="View Public Dossier"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <Eye size={14} />
-                          </Link>
-                        )}
-
-                        {item.status === 'danger' && (
-                          <button 
-                            className="btn-icon" 
-                            title="Audit History"
-                            onClick={() => alert('Viewing marine storm closure logs.')}
-                          >
-                            <History size={14} color="var(--text-secondary)" />
-                          </button>
-                        )}
+                        <Link
+                          to={`/tourism/${item.slug}`}
+                          className="btn-icon"
+                          title="View Public Dossier"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          <Eye size={14} />
+                        </Link>
 
                         <Link
                           to={`/admin/tourism/new?edit=${encodeURIComponent(item.slug || rowId)}`}
@@ -504,18 +476,8 @@ export default function TourismDirectoryPage() {
                           <Edit size={14} />
                         </Link>
 
-                        {item.status !== 'draft' && item.status !== 'danger' && (
-                          <button 
-                            className="btn-icon" 
-                            title="Toggle Visibility"
-                            onClick={() => handleToggleHide(rowId)}
-                          >
-                            <EyeOff size={14} color="var(--text-secondary)" />
-                          </button>
-                        )}
-
-                        <button 
-                          className="btn-icon" 
+                        <button
+                          className="btn-icon"
                           title="Delete Destination"
                           onClick={() => handleDelete(rowId, item.name)}
                         >
