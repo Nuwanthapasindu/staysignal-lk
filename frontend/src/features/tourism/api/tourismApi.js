@@ -14,7 +14,10 @@ const buildQuery = (params = {}) => {
 export const fetchTourismDestinations = async (params = {}) => {
   try {
     const res = await get(`/tourism${buildQuery(params)}`);
-    return { destinations: res.data, stats: res.stats || tourismStats };
+    const list = res.data ?? [];
+    // Fall back to the bundled dataset when the API has nothing to show.
+    if (!list.length) return { destinations: tourismList, stats: tourismStats };
+    return { destinations: list, stats: res.stats || tourismStats };
   } catch (err) {
     console.warn('[Tourism API] offline fallback:', err.message);
     return { destinations: tourismList, stats: tourismStats };

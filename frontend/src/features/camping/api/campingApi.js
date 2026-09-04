@@ -16,7 +16,9 @@ const buildQuery = (params = {}) => {
 export const fetchCampsites = async (params = {}) => {
   try {
     const res = await get(`/camping${buildQuery(params)}`);
-    return { campsites: res.data, stats: res.stats || campingStats };
+    const list = res.data ?? [];
+    if (!list.length) return { campsites: campsitesList, stats: campingStats };
+    return { campsites: list, stats: res.stats || campingStats };
   } catch (err) {
     console.warn('[Camping API] offline fallback:', err.message);
     return { campsites: campsitesList, stats: campingStats };
