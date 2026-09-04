@@ -106,3 +106,8 @@ and `frontend/src/features/auth/validation.js`):
 - confirm password must match
 - name — 2–80 chars
 - owner phone — `07XXXXXXXX` or `+947XXXXXXXX`
+
+## Demo Users
+For testing the authentication and RBAC system locally, you can use the following seeded accounts:
+- **Owner Account**: `amali@zionview.lk` | Password: `Owner123!` (role=owner)
+- **Traveller Account**: `kasun@gmail.com` | Password: `Travel123!` (role=traveller)

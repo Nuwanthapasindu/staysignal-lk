@@ -36,23 +36,20 @@ export const router = createBrowserRouter([
       { path: 'notices/:id', element: <NoticeDetailPage /> },
       { path: 'impact', element: <ImpactPage /> },
 
-      // Tourism Routes
+      // tourism
       { path: 'tourism', element: <TourismDirectoryPage /> },
       { path: 'tourism/new', element: <AddTourismPlacePage /> },
       { path: 'tourism/:id', element: <TourismDetailPage /> },
       { path: 'admin/tourism', element: <TourismDirectoryPage /> },
       { path: 'admin/tourism/new', element: <AddTourismPlacePage /> },
 
-      // Camping Routes
+      // camping
       { path: 'camping', element: <CampingDirectoryPage /> },
       { path: 'camping/new', element: <AddCampingPage /> },
       { path: 'camping/:id', element: <CampingDetailPage /> },
       { path: 'admin/camping', element: <CampingDirectoryPage /> },
       { path: 'admin/camping/new', element: <AddCampingPage /> },
 
-      { path: '*', element: <NotFoundPage /> }
-    ]
-  }
       // auth (guests only)
       { path: 'login', element: <GuestOnly><LoginPage /></GuestOnly> },
       { path: 'signup/traveller', element: <GuestOnly><SignupTravellerPage /></GuestOnly> },
