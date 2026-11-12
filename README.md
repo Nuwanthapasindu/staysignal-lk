@@ -160,8 +160,3 @@ When deploying:
 
 Already-created demo account credentials:
 
-| Role | Email | Password |
-| --- | --- | --- |
-| `owner` | `pasindhukavishan@gmail.com` | `Nuwantha@2004` |
-| `traveller` | `hnpkdias@gmail.com` | `Nuwantha@2004` |
-
